@@ -6,8 +6,48 @@
 
 搬迁后 CPT 与 emotion-core 都从这里取分型/笔/中枢/背驰/趋势结构，
 ⇒ 「判据只许一处」在跨仓范围上第一次真正成立。
+
+⚠️ **本包是判据本体，不是转发层**。CPT 侧的 ``cpt.domain`` 是指向本包的**模块别名**。
 """
 
 from __future__ import annotations
 
-__all__ = ["models", "rules"]
+from . import (
+    a_share_rules,
+    bi,
+    config,
+    contain,
+    containment_trace,
+    first_buy,
+    fractal,
+    intraday_rules,
+    levels,
+    market_time,
+    models,
+    recursion,
+    signal,
+    structure_events,
+    trend_type,
+    types,
+    zhongshu,
+)
+
+__all__ = (
+    "a_share_rules",
+    "bi",
+    "config",
+    "contain",
+    "containment_trace",
+    "first_buy",
+    "fractal",
+    "intraday_rules",
+    "levels",
+    "market_time",
+    "models",
+    "recursion",
+    "signal",
+    "structure_events",
+    "trend_type",
+    "types",
+    "zhongshu",
+)
