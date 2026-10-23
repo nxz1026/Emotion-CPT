@@ -86,7 +86,7 @@ Emotion-CPT/
 │   └── test_probe.py
 └── deploy/
     ├── systemd/                   # unit 唯一真相源（计划，见 IMPLEMENTATION §6）
-    ├── cron/crontab               # 全部 13 条作业
+    ├── cron/crontab               # 全部 14 条作业
     └── env/
 ```
 

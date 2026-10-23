@@ -2,7 +2,7 @@
 
 **本目录是 crontab 的唯一真相源**（计划态，见 `docs/IMPLEMENTATION.md` §6）。
 
-搬迁时需把**线上全部 13 条**作业收进本目录 —— 包括目前**只活在线上、不在任何仓里**的 4 条：
+搬迁时需把**线上全部 14 条**作业收进本目录 —— 包括目前**只活在线上、不在任何仓里**的 5 条：
 
 ```cron
 */5  * * * * curl -sf --max-time 8 -o /dev/null http://127.0.0.1:8098/ || sudo -n systemctl restart emotion-core-dash

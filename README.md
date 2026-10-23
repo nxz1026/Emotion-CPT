@@ -44,7 +44,7 @@ CPT ──不反向调 emotion-core
 | 契约表清单 | 写在 `cpt/docs/shared-tables-contract.md` 的 markdown 表格里，**不受任何门禁保护** |
 | `intraday_seal_snapshot` 9 列 | CPT 的 `_INSERT_SQL` 与 emotion 的 `_COLUMNS` **各手抄一份** |
 | 5 个价格常量 | emotion-core **手抄** CPT 的值（`BUY_BUFFER` 等），改一边不传播，**且没有测试会红** |
-| crontab | 线上 13 条，仓内只有 9 条 —— **4 条线上作业不在任何仓里** |
+| crontab | 线上 **14** 条，仓内只有 9 条 —— **5 条线上作业不在任何仓里** |
 | systemd unit | 真相源在 `portal` 仓，两个项目仓里**各存一份副本**，要手动同步 |
 
 **"判据只许一处"（ADR 0003 §E2）这条原则在跨仓范围上从未达成。**
