@@ -20,6 +20,16 @@ SELL_BUFFER: Final[float] = 0.97
 #: 止损相对 BUY 参考位的比例
 STOP_LOSS_RATIO: Final[float] = 0.95
 
+#: 价格取整位数。
+#:
+#: A 股价格最小变动单位是 **0.01 元** ⇒ 结构位取整到**分**即可；
+#: 3 位小数（0.001 元）是**伪精度** —— 盘口根本没有这个刻度。
+#:
+#: ⚠️ 2026-10-23 口径收敛：此前 CPT 用 2 位、emotion-core 用 3 位，
+#: 实测同一批 overlays 下 **36 个价有 29 个不一致**（最大差 0.005 元）⇒
+#: 同一只票在两个系统印出不同的买/卖点价。现统一为 2 位。
+PRICE_ROUND_DIGITS: Final[int] = 2
+
 #: 取最近 N 笔
 BI_LOOKBACK: Final[int] = 3
 
@@ -28,6 +38,7 @@ ZHONGSHU_LOOKBACK: Final[int] = 2
 
 __all__ = (
     "BI_LOOKBACK",
+    "PRICE_ROUND_DIGITS",
     "BUY_BUFFER",
     "SELL_BUFFER",
     "STOP_LOSS_RATIO",
