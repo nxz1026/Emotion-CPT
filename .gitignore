@@ -1,0 +1,23 @@
+# 凭据类：绝不入仓
+.env
+.env.*
+*.key
+*.pem
+*.p12
+dbconfig
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+build/
+dist/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+# 本地产物
+*.log
+/tmp/

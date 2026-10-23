@@ -1,0 +1,48 @@
+name: Emotion-CPT CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # 3.12 = pyproject 声明的下限；3.14 = 开发机 .venv 的生成版本
+        # （与两个上游仓对齐，避免"本地全绿 ≠ CI 绿"）
+        python-version: ['3.12', '3.14']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]"
+      - name: Test
+        run: python -m pytest tests -q
+      - name: Lint
+        run: |
+          python -m ruff check src tests scripts
+      - name: Contract self-test (门禁必须能报错)
+        # 纪律：自制的验证工具第一版基本都错 —— 必须确认门禁还能报
+        run: python -m pytest tests/test_gate_selftest.py -q
+
+  contract-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install
+        run: python -m pip install -e ".[dev]"
+      - name: 依赖方向门禁（本仓不得 import 上游）
+        run: python -m emotion_cpt.cli.check_contracts --upstream-root /nonexistent || true
+      - name: 契约指纹
+        run: python -m emotion_cpt.cli.probe --fingerprint-only

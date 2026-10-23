@@ -1,0 +1,49 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "emotion-cpt"
+version = "0.1.0"
+description = "CPT × emotion-core 的统一层：跨项目契约、统一数据层、统一 web 入口"
+requires-python = ">=3.12"
+readme = "README.md"
+license = { text = "MIT" }
+authors = [{ name = "nxz1026" }]
+keywords = ["contracts", "chan-theory", "astock", "governance"]
+
+# 核心刻意**零依赖**：契约层要能被任何环境 import（包括上游的严格零依赖环境）。
+dependencies = []
+
+[project.optional-dependencies]
+# 只有需要连库的工具（探针 / manifest 比对）才要 psycopg。
+db = ["psycopg[binary]>=3.1,<4"]
+dev = ["pytest>=8.0", "ruff>=0.6.0", "mypy>=1.10", "import-linter>=2.0"]
+
+[project.scripts]
+emotion-cpt-check-contracts = "emotion_cpt.cli.check_contracts:main"
+emotion-cpt-check-manifest  = "emotion_cpt.cli.check_manifest:main"
+emotion-cpt-check-crontab   = "emotion_cpt.cli.check_crontab:main"
+emotion-cpt-check-units     = "emotion_cpt.cli.check_unit_paths:main"
+emotion-cpt-probe           = "emotion_cpt.cli.probe:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["emotion_cpt*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP"]
+
+[tool.mypy]
+strict = true
+python_version = "3.12"
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["tests"]
+addopts = "-ra -q"
