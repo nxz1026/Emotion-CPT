@@ -29,13 +29,28 @@ class SharedTable:
 
 
 SHARED_TABLES: Final[tuple[SharedTable, ...]] = (
-    SharedTable("daily_bar", "date", "emotion-core", "东财 push2delay 全市场快照；502 回退新浪；pytdx 回填"),
+    SharedTable(
+        "daily_bar",
+        "date",
+        "emotion-core",
+        "东财 push2delay 全市场快照；502 回退新浪；pytdx 回填",
+    ),
     SharedTable("derived_bar", "date", "emotion-core", "无外部源，纯 SQL 派生自 daily_bar"),
     SharedTable("hot_rank", "date", "emotion-core", "东财人气榜 top100"),
-    SharedTable("ladder_day", "date", "emotion-core", "无外部源，派生自 derived_bar / limit_pool_em"),
+    SharedTable(
+        "ladder_day",
+        "date",
+        "emotion-core",
+        "无外部源，派生自 derived_bar / limit_pool_em",
+    ),
     SharedTable("limit_pool_em", "date", "emotion-core", "akshare 涨停/炸板/跌停池"),
     SharedTable("strategy_signal", "trade_date", "emotion-core", "LLM 策略观察（15 个 YAML 策略）"),
-    SharedTable("trade_calendar", "date", "emotion-core", "akshare 新浪交易日历，刻意独立于库内行情数据"),
+    SharedTable(
+        "trade_calendar",
+        "date",
+        "emotion-core",
+        "akshare 新浪交易日历，刻意独立于库内行情数据",
+    ),
 )
 
 #: 反向契约表（CPT 写 → emotion-core 读）。方向不同、新鲜度判据不同（日频 vs 盘中每 2 分钟），

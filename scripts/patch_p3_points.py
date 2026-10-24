@@ -337,7 +337,8 @@ from emotion_cpt.snapshot.points import structure_picks
 '''                buy_reference=buy,
                 stop_price=round(stop, PRICE_ROUND_DIGITS) if stop is not None else None,
                 target_price=sell,''')
-    s = s.replace('''                sell_reference=round(sell, 3) if sell is not None else None,''',
+    s = s.replace(
+        '''                sell_reference=round(sell, 3) if sell is not None else None,''',
 '''                sell_reference=sell,''')
     s = s.replace('''            buy_reference=round(raw_close * (1 - FALLBACK_BUY_PCT), 3),
             stop_price=round(raw_close * (1 - FALLBACK_STOP_PCT), 3),
@@ -349,7 +350,9 @@ from emotion_cpt.snapshot.points import structure_picks
 '''        sell_reference=round(raw_close * (1 + FALLBACK_TARGET_PCT), PRICE_ROUND_DIGITS),''')
 
     # 模块 docstring：说明算式已迁走
-    s = s.replace('''结构位算式**逐条移植**自 CPT（Chan_Pattern_Trader）的 `application/track_points.py`，
+    s = s.replace(
+        '''结构位算式**逐条移植**自 CPT（Chan_Pattern_Trader）
+的 `application/track_points.py`，
 **不 import**（`docs/shared-tables-contract.md` §5 明令两侧零代码依赖）：''',
 '''结构位算式**已于 2026-10-23 迁至 Emotion-CPT**（`emotion_cpt.snapshot.points`），
 本模块与 CPT 的 `application/track_points.py` **共用同一份实现**：
@@ -372,7 +375,8 @@ def patch_emotion_pyproject() -> None:
     old = "dependencies = []"
     new = (
         "dependencies = [\n"
-        "    # 判据（结构位算式与常量）已迁至 Emotion-CPT —— 单向依赖：emotion_core → emotion_cpt。\n"
+        "    # 判据（结构位算式与常量）已迁至 Emotion-CPT —— "
+        "单向依赖：emotion_core → emotion_cpt。\n"
         "    # 钉到 tag 而不是 main：main 是移动目标，重建环境会拿到不确定的判据版本。\n"
         '    "emotion-cpt @ git+https://github.com/nxz1026/Emotion-CPT.git@v0.1.0",\n'
         "]"

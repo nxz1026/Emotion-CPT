@@ -83,7 +83,6 @@ def patch_intraday() -> None:
 
     # ① board_pct_limit → 转发
     old = '''def board_pct_limit(code: str, *, name: str | None = None) -> float:'''
-    new = '''def board_pct_limit(code: str, *, name: str | None = None) -> float:  # noqa: D401'''
     assert old in s
     # 用整个函数体替换更稳：找到函数到下一个顶层 def
     start = s.index(old)
@@ -237,7 +236,8 @@ def _contract_price_module() -> Path:
     s = s.replace(old, new, 1)
 
     old = '''    """从 utils/price.board_pct_milli 的 AST 抽出 {返回值: [前缀...]}。'''
-    new = '''    """从 **Emotion-CPT** 的 ``structure.price.board_pct_milli`` 抽出 {返回值: [前缀...]}。'''
+    new = '''    """从 **Emotion-CPT** 的 ``structure.price.board_pct_milli``
+    抽出 {返回值: [前缀...]}。'''
     assert old in s
     s = s.replace(old, new, 1)
 

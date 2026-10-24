@@ -43,7 +43,7 @@ CPT ──不反向调 emotion-core
 | 表数口径 | 文档写过 8 / 10 / 28 / 33 / 36 / 41，真值 **52** |
 | 契约表清单 | 写在 `cpt/docs/shared-tables-contract.md` 的 markdown 表格里，**不受任何门禁保护** |
 | `intraday_seal_snapshot` 9 列 | CPT 的 `_INSERT_SQL` 与 emotion 的 `_COLUMNS` **各手抄一份** |
-| 5 个价格常量 | emotion-core **手抄** CPT 的值（`BUY_BUFFER` 等），改一边不传播，**且没有测试会红** |
+| 5 个价格常量（**迁移前**的实况） | emotion-core **手抄** CPT 的值（`BUY_BUFFER` 等），改一边不传播，**且没有测试会红** |
 | crontab | 线上 **14** 条，仓内只有 9 条 —— **5 条线上作业不在任何仓里** |
 | systemd unit | 真相源在 `portal` 仓，两个项目仓里**各存一份副本**，要手动同步 |
 
@@ -79,7 +79,7 @@ CPT 的 web 层直接依赖 **39 个 application 模块 / 8,380 行**，
 | **结构计算内核** | 分型 / 笔 / 中枢 / 包含 / 递归 / 趋势 / 背驰 / 结构位 / 买卖点判据 | CPT `cpt/domain/`（18 模块 / 3,581 行 / 零三方依赖） |
 | **快照** | 「K 线 → 结构 → overlays → 结构位 → 结论」的**计算部分** | CPT `cpt/application/a_share_snapshot.py`（1,959 行）的计算部分 |
 | **统一 web 界面层** | 统一入口门面（门户 + 同票并排聚合页 + 两边 API/静态的挂载） | 新增 + 复用 `DSH/portal` |
-| **跨项目契约** | 表归属、9 列声明、5 个价格常量、共享表清单 | 从 markdown 与手抄收敛为代码 |
+| **跨项目契约** | 表归属、9 列声明、6 个契约常量、共享表清单 | 从 markdown 与手抄收敛为代码 |
 
 ### 3.2 Emotion-CPT 明确**不做**
 

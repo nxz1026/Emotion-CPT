@@ -12,7 +12,7 @@
     python scripts/parity_structure.py --dump-bars /tmp/bars.json
 
     # ② 迁移前：用原实现跑，存黄金参考
-    python scripts/parity_structure.py --impl cpt         --bars /tmp/bars.json --out /tmp/golden.json
+    python scripts/parity_structure.py --impl cpt --bars /tmp/bars.json --out /tmp/golden.json
 
     # ③ 迁移后：用新实现跑
     python scripts/parity_structure.py --impl emotion_cpt --bars /tmp/bars.json --out /tmp/new.json
@@ -26,7 +26,6 @@ import argparse
 import dataclasses
 import json
 import pathlib
-import sys
 from datetime import datetime, timedelta, timezone
 
 CST = timezone(timedelta(hours=8))
@@ -89,7 +88,7 @@ def run_chain(impl: str, bars: list[dict], min_bi_len: int | None) -> dict:
         raise SystemExit(f"未知实现：{impl}")
 
     canonical = []
-    for i, b in enumerate(bars):
+    for b in bars:
         d = datetime.fromisoformat(b["date"]).replace(tzinfo=CST)
         open_ms = int(d.replace(hour=9, minute=30).timestamp() * 1000)
         close_ms = int(d.replace(hour=15, minute=0).timestamp() * 1000)
@@ -158,7 +157,7 @@ def compare(a: pathlib.Path, b: pathlib.Path) -> int:
                 la, lb = ra[code][key], rb[code][key]
                 if isinstance(la, list) and isinstance(lb, list):
                     diffs.append(f"    长度 {len(la)} vs {len(lb)}")
-                    for i, (x, y) in enumerate(zip(la, lb)):
+                    for i, (x, y) in enumerate(zip(la, lb, strict=False)):
                         if x != y:
                             diffs.append(f"    [{i}] {x}")
                             diffs.append(f"    [{i}] {y}")
@@ -170,7 +169,10 @@ def compare(a: pathlib.Path, b: pathlib.Path) -> int:
         for d in diffs:
             print(f"   {d}")
         return 1
-    print(f"✅ parity 完全一致（{len(ra)} 只股票 × 6 类输出，门槛 min_bi_len={da.get('min_bi_len')}）")
+    print(
+        f"✅ parity 完全一致（{len(ra)} 只股票 × 6 类输出，"
+        f"门槛 min_bi_len={da.get('min_bi_len')}）"
+    )
     return 0
 
 

@@ -209,6 +209,7 @@ def confirmed_point(
         "price_level": round(raw, PRICE_ROUND_DIGITS),
         "condition": "信号已经走到确认这一步，且价格仍在区间内",
         "rationale": (
-            f"取最新结构的{'下沿' if side == 'buy' else '上沿'} {adj:.2f}（adjusted）÷ {price_ratio:.4f}"
+            f"取最新结构的{'下沿' if side == 'buy' else '上沿'} "
+            f"{adj:.2f}（adjusted）÷ {price_ratio:.4f}"
         ),
     }

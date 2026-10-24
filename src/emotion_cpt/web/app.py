@@ -37,10 +37,9 @@ from typing import Any
 from urllib.parse import parse_qs, urlsplit
 
 from .aggregate.server import build_stock_payload
+from .facade import DEFAULT_PORT, ENTRIES, HOST  # noqa: F401  （入口定义在 facade 里）
 
 _LOG = logging.getLogger("emotion_cpt.web")
-
-from .facade import DEFAULT_PORT, ENTRIES, HOST  # noqa: F401  （入口定义在 facade 里）
 
 _CSS = """
 :root{--bg:#0f1115;--card:#171a21;--line:#262b36;--fg:#e6e9ef;--dim:#8b93a3;
@@ -78,7 +77,8 @@ margin-top:8px;font-size:13px}
 .kv{display:grid;grid-template-columns:96px 1fr;gap:4px 12px;font-size:13px;margin-top:8px}
 .kv dt{color:var(--dim)}.kv dd{margin:0}
 .mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px}
-.note{color:var(--dim);font-size:12px;margin-top:18px;border-top:1px solid var(--line);padding-top:12px}
+.note{color:var(--dim);font-size:12px;margin-top:18px;
+border-top:1px solid var(--line);padding-top:12px}
 """
 
 
@@ -86,7 +86,7 @@ def _page(title: str, body: str) -> bytes:
     return f"""<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>{escape(title)} · Emotion-CPT</title><style>{_CSS}</style></head>
-<body><div class="wrap">{body}</div></body></html>""".encode("utf-8")
+<body><div class="wrap">{body}</div></body></html>""".encode()
 
 
 def _portal() -> bytes:
@@ -115,7 +115,10 @@ def _aggregate_page(code: str, payload: dict[str, Any] | None) -> bytes:
 <button type="submit">并排</button></form>"""
     if not payload or not payload.get("ok"):
         err = (payload or {}).get("error", "未知错误")
-        body = f"<h1>同票并排</h1>{input_box}<div class='warn'>无法构造 payload：{escape(str(err))}</div>"
+        body = (
+            f"<h1>同票并排</h1>{input_box}"
+            f"<div class='warn'>无法构造 payload：{escape(str(err))}</div>"
+        )
         return _page("同票并排", body)
 
     panels = payload["panels"]
@@ -143,7 +146,10 @@ def _aggregate_page(code: str, payload: dict[str, Any] | None) -> bytes:
         )
         conflict_html = f"<h3>差异（{len(conflicts)}）</h3>{items}"
     else:
-        conflict_html = "<h3>差异</h3><div class='warn' style='border-color:#3fb950'>三套口径未见方向冲突</div>"
+        conflict_html = (
+            "<h3>差异</h3><div class='warn' style='border-color:#3fb950'>"
+            "三套口径未见方向冲突</div>"
+        )
 
     cpt_kv = ""
     if cpt.get("available"):
@@ -236,7 +242,9 @@ class FacadeHandler(BaseHTTPRequestHandler):
         _LOG.info("%s - %s", self.address_string(), fmt % args)
 
     # ── 响应工具 ──
-    def _send(self, body: bytes, status: int = 200, ctype: str = "text/html; charset=utf-8") -> None:
+    def _send(
+        self, body: bytes, status: int = 200, ctype: str = "text/html; charset=utf-8"
+    ) -> None:
         self.send_response(status)
         self.send_header("Content-Type", ctype)
         self.send_header("Content-Length", str(len(body)))
@@ -287,7 +295,6 @@ def _health() -> dict[str, Any]:
     from .aggregate.clients import (
         fetch_cpt_recommendation,
         fetch_emotion_status,
-        get_json,
     )
 
     out: dict[str, Any] = {"ok": True, "self": "emotion-cpt-facade"}

@@ -326,7 +326,11 @@ def check_pinned_versions(upstreams: dict[str, pathlib.Path]) -> list[Issue]:
         m = re.search(r'emotion-cpt\s*@\s*[^"\'\s]*@([A-Za-z0-9._-]+)', text)
         if not m:
             issues.append(
-                Issue("unpinned", f"{name}/pyproject.toml", "没有声明 emotion-cpt 依赖（契约不受版本约束）")
+                Issue(
+                    "unpinned",
+                    f"{name}/pyproject.toml",
+                    "没有声明 emotion-cpt 依赖（契约不受版本约束）",
+                )
             )
             continue
         pinned = m.group(1)
@@ -399,7 +403,13 @@ def check_no_upstream_imports() -> list[Issue]:
                 names = [node.module]
             for name in names:
                 if name.split(".")[0] in banned:
-                    issues.append(Issue("forbidden-import", str(path), f"不得 import 上游模块 {name!r}"))
+                    issues.append(
+                        Issue(
+                            "forbidden-import",
+                            str(path),
+                            f"不得 import 上游模块 {name!r}",
+                        )
+                    )
     return issues
 
 

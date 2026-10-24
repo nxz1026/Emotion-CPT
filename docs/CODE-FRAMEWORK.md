@@ -44,7 +44,7 @@ Emotion-CPT/
 │   │   ├── __init__.py
 │   │   ├── tables.py              #   52 张表的归属 / 写入方 / 读取方 / 新鲜度
 │   │   ├── intraday_seal.py       #   9 列声明（带单位与语义）
-│   │   ├── pricing.py             #   5 个价格常量
+│   │   ├── pricing.py             #   6 个契约常量
 │   │   ├── shared_tables.py       #   7 张共享表清单 + 新鲜度判据
 │   │   └── errors.py
 │   ├── db/                        # 数据访问层
@@ -59,35 +59,67 @@ Emotion-CPT/
 │   ├── structure/                 # ★ 结构计算内核（缠论判据唯一实现处）
 │   │   ├── __init__.py
 │   │   ├── models.py              #   Fractal / Bi / ZhongShu / TrendType + overlays 契约
-│   │   └── rules.py               #   分型/笔/中枢/趋势的计算（自 CPT cpt/domain 搬迁）
+│   │   ├── bi.py                  #   笔（含 min_bi_len 门槛：跨度不足合并端点）
+│   │   ├── fractal.py             #   分型
+│   │   ├── levels.py              #   级别
+│   │   ├── contain.py             #   包含关系
+│   │   ├── containment_trace.py   #   包含关系追踪
+│   │   ├── recursion.py           #   递归
+│   │   ├── signal.py              #   信号
+│   │   ├── structure_events.py    #   结构事件
+│   │   ├── trend_type.py          #   趋势类型
+│   │   ├── zhongshu.py            #   中枢
+│   │   ├── types.py               #   共享类型
+│   │   ├── config.py              #   内核配置
+│   │   ├── first_buy.py           #   一买判据
+│   │   ├── a_share_rules.py       #   A 股判据
+│   │   ├── intraday_rules.py      #   盘中判据
+│   │   ├── market_time.py         #   交易时段
+│   │   └── price.py               #   ★ 价格口径（整数分算法，P6）
 │   ├── snapshot/                  # ★ 快照计算（K 线 → 结构 → overlays → 结构位）
 │   │   ├── __init__.py
-│   │   └── pipeline.py            #   compute_snapshot()
+│   │   ├── pipeline.py            #   compute_snapshot()
+│   │   └── points.py              #   ★ 结构位算式（P3 统一：取整 2 位）
 │   ├── web/                       # 统一 web 入口
 │   │   ├── __init__.py
-│   │   ├── portal/                #   门户
+│   │   ├── app.py                 #   ★ 入口门面（:8092，零三方依赖）
+│   │   ├── facade.py              #   门户 + 挂载
 │   │   └── aggregate/             #   同票并排（只读聚合页）
 │   │       ├── __init__.py
 │   │       ├── server.py
-│   │       ├── clients.py         #   对 CPT / emotion 的只读 HTTP 客户端
-│   │       └── templates/
+│   │       └── clients.py         #   对 CPT / emotion 的只读 HTTP 客户端
 │   └── cli/                       # 命令行入口
 │       ├── __init__.py
 │       ├── check_contracts.py
 │       ├── check_manifest.py
 │       ├── check_crontab.py
-│       └── check_unit_paths.py
+│       ├── check_unit_paths.py
+│       ├── check_doc_drift.py      #   ★ 文档 ↔ 代码 漂移
+│       └── probe.py
 │
-├── scripts/                       # 门禁脚本（薄封装，逻辑在 cli/）
+├── scripts/                       # 门禁脚本（薄封装，逻辑在 cli/）+ 安装器
+│   ├── check_contracts.sh
+│   ├── check_crontab.sh
+│   ├── check_manifest.sh
+│   ├── install_crontab.sh         # ★ crontab 真相源 → 线上（带备份 + 校验）
+│   └── install_units.sh           # ★ unit 真相源 → 线上（带备份 + 校验）
 ├── tests/
 │   ├── test_contracts.py
 │   ├── test_manifest.py
 │   ├── test_gate_selftest.py      # ★ 门禁自证：注入假数据必须报错
+│   ├── test_price_equivalence.py  # ★ 价格口径三方穷举对等
+│   ├── test_aggregate.py
+│   ├── test_web_aggregate.py
+│   ├── test_facade.py
 │   └── test_probe.py
-└── deploy/
-    ├── systemd/                   # unit 唯一真相源（计划，见 IMPLEMENTATION §6）
-    ├── cron/crontab               # 全部 14 条作业
-    └── env/
+└── deploy/                        # 仓根只放**运行时**资产
+    ├── cron/
+    │   ├── emotion-dash-watchdog.sh   # ★ 看板存活看门狗
+    │   └── README.md
+    ├── nginx/
+    │   ├── dsh-facade.conf
+    │   └── README.md
+    └── systemd/README.md           # unit 真相源在包内（见下）
 ```
 
 ---

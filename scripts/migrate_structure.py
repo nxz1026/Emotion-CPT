@@ -188,7 +188,9 @@ def main(argv: list[str] | None = None) -> int:
 
         if mod_name == "__init__":
             if not args.dry_run:
-                (ec_struct / "__init__.py").write_text(inject_note(text, mod_name), encoding="utf-8")
+                (ec_struct / "__init__.py").write_text(
+                    inject_note(text, mod_name), encoding="utf-8"
+                )
             print("  -> " + mod_name + ": 包初始化")
             continue
 

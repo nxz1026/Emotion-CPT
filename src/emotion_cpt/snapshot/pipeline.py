@@ -21,8 +21,9 @@ CPT 的 ``overlays`` 在**后复权（adj）域**，``daily_bar.close`` 在**不
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass, field
-from typing import Any, Sequence
+from typing import Any
 
 
 @dataclass(frozen=True)

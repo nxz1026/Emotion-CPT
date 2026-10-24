@@ -17,7 +17,6 @@
 
 from __future__ import annotations
 
-import shutil
 from pathlib import Path
 
 import pytest
@@ -100,7 +99,10 @@ def _make_upstream(root: Path) -> Path:
     _write(root / "cpt" / "application" / "track_points.py", _PRICE_SRC)
     _write(root / "cpt" / "storage" / "intraday_seal_store.py", _SEAL_STORE_SRC)
     _write(root / "src" / "emotion_core" / "algorithms" / "levels.py", _PRICE_SRC)
-    _write(root / "src" / "emotion_core" / "data" / "providers" / "cpt_intraday.py", _SEAL_READER_SRC)
+    _write(
+        root / "src" / "emotion_core" / "data" / "providers" / "cpt_intraday.py",
+        _SEAL_READER_SRC,
+    )
     return root
 
 

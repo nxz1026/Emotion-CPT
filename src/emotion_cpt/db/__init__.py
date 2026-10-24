@@ -3,6 +3,6 @@
 from __future__ import annotations
 
 from .config import DBCONFIG_FILE, read_dbconfig
-from .connection import connection_kwargs, connect
+from .connection import connect, connection_kwargs
 
 __all__ = ("DBCONFIG_FILE", "connect", "connection_kwargs", "read_dbconfig")

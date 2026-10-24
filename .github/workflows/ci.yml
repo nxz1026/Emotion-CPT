@@ -32,6 +32,15 @@ jobs:
       - name: Contract self-test (门禁必须能报错)
         # 纪律：自制的验证工具第一版基本都错 —— 必须确认门禁还能报
         run: python -m pytest tests/test_gate_selftest.py -q
+      - name: 文档漂移门禁（文档 ↔ 代码）
+        # 契约数字的机器可读真源是 CONTRACTS.md 里的 contract-facts 块
+        # ⇒ 代码改了数字而文档没改 ⇒ 这里会红
+        run: python -m emotion_cpt.cli.check_doc_drift
+      - name: 文档漂移门禁自证（必须还能报）
+        run: python -m pytest tests/test_doc_drift_selftest.py -q
+      - name: 交叉引用生成物一致（docs/CROSS-REFERENCES.md 不得手改）
+        # 交叉引用是**生成**的；手改会在下一次重算时被覆盖 ⇒ 这里直接拦住
+        run: python scripts/gen_cross_references.py --check
 
   contract-gate:
     runs-on: ubuntu-latest

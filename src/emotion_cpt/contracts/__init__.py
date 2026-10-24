@@ -10,7 +10,7 @@ from __future__ import annotations
 from .intraday_seal import INTRADAY_SEAL_COLUMNS, INTRADAY_SEAL_TABLE
 from .pricing import BI_LOOKBACK, BUY_BUFFER, SELL_BUFFER, STOP_LOSS_RATIO, ZHONGSHU_LOOKBACK
 from .shared_tables import REVERSE_TABLES, SHARED_TABLES
-from .tables import TableSpec, TABLES, table_of, tables_of
+from .tables import TABLES, TableSpec, table_of, tables_of
 
 __all__ = (
     "BI_LOOKBACK",

@@ -58,7 +58,7 @@ def main(argv: list[str] | None = None) -> int:
 
     issues = compare(TABLES, live)
     if issues:
-        print(f"❌ manifest 与真库不一致：", file=sys.stderr)
+        print("❌ manifest 与真库不一致：", file=sys.stderr)
         for issue in issues:
             print(f"  {issue}", file=sys.stderr)
         return 1

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "emotion-cpt"
-version = "0.4.0"
+version = "0.5.0"
 description = "CPT × emotion-core 的统一层：跨项目契约、统一数据层、统一 web 入口"
 requires-python = ">=3.12"
 readme = "README.md"
@@ -42,6 +42,12 @@ target-version = "py312"
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "B", "UP"]
+
+[tool.ruff.lint.per-file-ignores]
+# 门禁的 docstring 里有 **markdown 表格** —— 表格行折行会破坏表格结构，
+# 只能整行留着 ⇒ 豁免 E501（其余规则照常）。
+"src/emotion_cpt/cli/check_contracts.py" = ["E501"]
+"src/emotion_cpt/cli/check_doc_drift.py" = ["E501"]
 
 [tool.mypy]
 strict = true

@@ -1,11 +1,18 @@
 # 实施文档 —— Emotion-CPT
 
-> 状态：**v1 冻结**（2026-10-23）
+> 状态：**P0–P8 全部完成**（2026-10-24）· v1 计划冻结于 2026-10-23
 > 前置：[README.md](../README.md)（定位与边界）· [CODE-FRAMEWORK.md](CODE-FRAMEWORK.md)（代码结构）
+>
+> **专章**：
+> [CONTRACTS.md](CONTRACTS.md)（契约总览·人读版）·
+> [CROSS-REFERENCES.md](CROSS-REFERENCES.md)（契约↔上游交叉引用·**生成**）·
+> [GATE-SELFTEST.md](GATE-SELFTEST.md)（门禁自证记录）·
+> [OPEN-QUESTIONS.md](OPEN-QUESTIONS.md)（待裁决项归档）
 
 ---
 
 ## 0. 实施原则
+
 
 1. **不改变两个上游项目的运行状态。** 本仓的推进**不得**导致 CPT 或 emotion-core 停摆。
    每个阶段要么只动本仓，要么以「可一键回滚」的方式动上游。
@@ -19,18 +26,19 @@
 
 ## 1. 阶段总览
 
-| 阶段 | 目标 | 动上游? | 人日 | 出口条件 |
-|---|---|---|---|---|
-| **P0** | 前置验证实验 | ❌ 否 | 1 | 三个实验全部有明确结论 ✅ **已通过**，见 [P0-EXPERIMENTS.md](P0-EXPERIMENTS.md) |
-| **P1** | 契约 + 数据层就位 | ❌ 否 | 2.5 | 契约常量与连接层落地 + 门禁红绿自证 |
-| **P2** | **结构计算内核搬迁** | ✅ 是 | 2 | ✅ **已完成** —— 见 [P2-MIGRATION.md](P2-MIGRATION.md)（逐字节一致 + parity 一致 + 生产重启前后对比一致） |
-| **P3** | **快照计算搬迁** | ❌ 否 | 2 | `emotion_cpt.snapshot` 产出的 overlays 与 CPT 生产一致 |
-| **P4** | **web 界面层（门面）** | ✅ 是（挂载配置） | 1.5 | 统一入口 + 同票并排聚合页上线 |
-| **P5** | 门禁接入上游 | ✅ 是（只加检查） | 1 | 上游 CI 里出现契约门禁 |
-| **P6** | 上游切换到共用件 | ✅ 是 | 2 | CPT/emotion 改用 Emotion-CPT 的数据层与结构层 |
-| **P7** | 部署真相源归一 | ✅ 是 | 1 | unit/crontab 单点真相源 + 双向对账 |
-| **P8** | 收尾与治理 | ✅ 是 | 0.5 | 文档与门禁齐备 |
-| | **合计** | | **13.5** | |
+
+| 阶段 | 目标 | 动上游? | 人日 | 出口条件 | 状态 |
+|---|---|---|---|---|---|
+| **P0** | 前置验证实验 | ❌ 否 | 1 | 三个实验全部有明确结论 | ✅ [P0-EXPERIMENTS.md](P0-EXPERIMENTS.md) |
+| **P1** | 契约 + 数据层就位 | ❌ 否 | 2.5 | 契约常量与连接层落地 + 门禁红绿自证 | ✅ |
+| **P2** | **结构计算内核搬迁** | ✅ 是 | 2 | 逐字节一致 + parity 一致 + 生产重启前后对比一致 | ✅ [P2-MIGRATION.md](P2-MIGRATION.md) |
+| **P3** | **结构位算式统一** | ✅ 是 | 2 | 结构位产出一致（取整统一 2 位） | ✅ [P3-SHARED-POINTS.md](P3-SHARED-POINTS.md) |
+| **P4** | **web 界面层（门面）** | ✅ 是（挂载配置） | 1.5 | 统一入口 + 同票并排聚合页上线 | ✅ |
+| **P5** | 门禁接入上游 | ✅ 是（只加检查） | 1 | 上游 CI 里出现契约门禁 | ✅ |
+| **P6** | **A 股价制与涨跌停价口径统一** | ✅ 是 | 2 | 两上游改用契约包的价制；Python↔Rust 对等门禁 | ✅ [P6-PRICE-CALIBER.md](P6-PRICE-CALIBER.md) |
+| **P7** | 部署真相源归一 | ✅ 是 | 1 | unit/crontab 单点真相源 + 双向对账 | ✅ [P7-DEPLOY-TRUTH.md](P7-DEPLOY-TRUTH.md) |
+| **P8** | 收尾与治理 | ✅ 是 | 0.5 | 文档与门禁齐备 | ✅ 本文件 |
+| | **合计** | | **13.5** | | ✅ |
 
 **顺序不可换**：P2（内核）必须早于 P4（web）。
 先抽 web 层会连带拖走 CPT 的 98 个模块 / 28,519 行（6/7 个包）；
@@ -39,6 +47,7 @@
 ---
 
 ## 2. P0 · 前置验证实验（1 天，不动任何生产）
+
 
 三个实验决定后续形态。**在 P0 出结论前，不写任何实现代码。**
 
@@ -93,6 +102,7 @@ cd <cpt> && /tmp/ec-compat-venv/bin/python -m pytest tests -q
 
 ## 3. P1 · 契约提取（2 天，不动上游）
 
+
 ### 3.1 产出物
 
 ```
@@ -100,7 +110,7 @@ src/emotion_cpt/contracts/
 ├── __init__.py            # 公共 API 汇总
 ├── tables.py              # TableManifest：52 张表 → 归属 / 写入方 / 读取方
 ├── intraday_seal.py       # 9 列的唯一 ColumnSpec 定义
-├── pricing.py             # 5 个价格常量的唯一定义
+├── pricing.py             # 6 个契约常量的唯一定义
 └── shared_tables.py       # 7 张共享表 + 1 张反契约表的清单与新鲜度判据
 ```
 
@@ -120,17 +130,17 @@ class Column:
     semantics: str = ""           # ← 语义陷阱（distance_pct 是百分数不是小数）
 
 INTRADAY_SEAL_COLUMNS: tuple[Column, ...] = (
-    Column("at", "timestamptz", False, semantics="本轮采集时刻，UTC 存储 UTC 输出"),
+    Column("at", "timestamptz", False, semantics="本轮采集时刻；UTC 存储、UTC 输出"),
     Column("code", "text", False, semantics="6 位纯代码，如 '600293'"),
     Column("sealed", "boolean", False, semantics="这一轮是否封在板上"),
     Column("bid1_lots", "double precision", True, unit="手（1 手 = 100 股）",
            semantics="买一挂单量；读方阈值用股时必须 ×100"),
-    Column("limit_price", "double precision", True, semantics="本轮用的涨停价（Decimal 取整口径）"),
+    Column("limit_price", "double precision", True, semantics="本轮用的涨停价（CPT 的 Decimal 取整口径，读方自算会差一分钱）"),
     Column("price", "double precision", True, semantics="本轮现价"),
     Column("prev_close", "double precision", True, semantics="昨收"),
     Column("distance_pct", "double precision", True, unit="百分数（非小数）",
-           semantics="(limit-price)/limit*100；0.0=封在板上，负数=已超板"),
-    Column("is_st", "boolean", True, semantics="ST 判定结果；NULL=没判。判据在 CPT"),
+           semantics="(limit_price - price) / limit_price * 100；0.0 = 封在板上，负数 = 已超板"),
+    Column("is_st", "boolean", True, semantics="ST 判定结果；NULL = 没判。判据归 CPT（ADR 0003 §E2「判据只许一处」）"),
 )
 ```
 **为什么带 `unit` / `semantics`**：契约漂移里最贵的不是字段名，是**同名不同义**
@@ -153,15 +163,23 @@ TABLES: tuple[TableSpec, ...] = ( ... 52 张 ... )
 ### 3.3 门禁与自证
 
 ```
+src/emotion_cpt/cli/
+├── check_manifest.py       # manifest ↔ 真库 pg_tables 比对（多/少都红）
+├── check_contracts.py      # 契约 ↔ 上游两侧实际代码值比对
+├── check_crontab.py        # 仓内 ↔ 线上 crontab 双向对账
+├── check_unit_paths.py     # 仓内 ↔ 线上 systemd unit 双向对账
+└── check_doc_drift.py      # 文档 ↔ 代码 漂移（contract-facts 块逐项对账）
 scripts/
-├── check_table_manifest.py    # manifest ↔ 真库 pg_tables 比对（多/少都红）
-├── check_contracts.py         # 契约 ↔ 上游两侧实际代码值比对
-└── check_crontab.py           # 仓内 ↔ 线上 crontab 双向比对（P4 再接线上）
+├── check_manifest.sh       # 薄封装
+├── check_contracts.sh
+├── check_crontab.sh
+├── install_units.sh        # 真相源 → 线上（带备份 + 校验）
+└── install_crontab.sh
 ```
 
 **验收必须包含"注入假数据"**：
 1. 故意改 `pricing.BUY_BUFFER` 的值 ⇒ `check_contracts.py` 必须红且指出差异
-2. 往 manifest 里塞一张不存在的表 ⇒ `check_table_manifest.py` 必须红
+2. 往 manifest 里塞一张不存在的表 ⇒ `check_manifest.py` 必须红
 3. 删掉一列定义 ⇒ 契约门禁必须红
 
 > 这条来自上游 R45 的教训：**「自制的验证工具第一版基本都错」** ——
@@ -169,23 +187,26 @@ scripts/
 
 ---
 
-## 4. P2 · 门禁接入上游（1 天）
+## 4. P2/P3 · 内核搬迁与结构位统一
 
-本仓的门禁要在**上游 CI 里**跑，才能真正守住边界。
+这两阶段的**正文在专章文档**里（它们体量最大，不适合塞进实施文档）：
 
-**做法**：本仓提供一个只读探针（`emotion_cpt.cli.contracts_probe`），输出机器可读的契约指纹；
-上游仓的 CI 加一个 job：拉取本仓的契约指纹，与自己代码里的实际值比对，不一致就红。
+| 阶段 | 做了什么 | 专章 |
+|---|---|---|
+| **P2** | CPT `cpt/domain/` 的 **17 个模块 / 3,581 行**判据内核**逐字**搬进 `emotion_cpt/structure/`；CPT 侧改成**模块别名转发层**（`cpt.domain.X is emotion_cpt.structure.X` ⇒ True），**117 个调用点零改动** | [P2-MIGRATION.md](P2-MIGRATION.md) |
+| **P3** | 结构位算式统一到 `emotion_cpt/snapshot/points.py`；取整统一 **2 位**（`PRICE_ROUND_DIGITS`）—— 实测 36 个价里 **29 个**原本不一致（最大差 0.005 元） | [P3-SHARED-POINTS.md](P3-SHARED-POINTS.md) |
 
-**为什么不是让上游 import 本仓**：见 §7 的依赖方向论证 —— 先用**校验**建立约束，
-确认稳定后再（P5，可选）升级为**依赖**。
+⚠️ **为什么是「模块别名」而不是 re-export 壳**：壳有 3 个实测缺陷 ——
+monkeypatch 打在壳上失效 / 属性访问式引用（`ir.SHARES_PER_LOT`）缺符号 / 模块状态分叉。
+⇒ 别名让「唯一真源」在**运行时可验证**，而不只是「文件看起来一样」。
 
-**验收**：
-- 在上游 emotion-core 的 `levels.py` 里把 `BUY_BUFFER` 改成 1.03 ⇒ 上游 CI 红
-- 改回 ⇒ 绿
+## 5. P4 · 统一 web 入口（1 天）
 
----
 
-## 5. P3 · 统一 web 入口（1 天）
+> 📌 **实际执行结果**：✅ 已完成。
+> `emotion-cpt-web.service`（:8092，**零三方依赖**的系统 python3 跑），
+> 入口 `/dsh/` 与同级 location **同 realm**（401），
+> `/aggregate/stock/{code}` 把**同票并排**（三套口径，**不裁决**）。
 
 ### 5.1 现状（真机实测）
 
@@ -222,41 +243,38 @@ src/emotion_cpt/web/
 
 ---
 
-## 6. P4 · 部署真相源归一（1 天）
+## 6. P5 · 门禁接入上游（1 天）
 
-### 6.1 触碰点（真机实测）
 
-| 类别 | 数量 |
-|---|---|
-| systemd unit 文件 | 20（5 CPT + 15 emotion） |
-| 线上 `/etc/systemd/system` 里的写死路径 | **43 处** |
-| 仓内硬编码仓路径 | **64 行** |
-| cron 脚本 | 10（CPT 仓内） |
-| 线上 crontab 作业 | **14 条**（仓内 9 + **仓外 5**） |
-| unit 真相源副本 | **3 份**（portal + 两个项目仓） |
+> 📌 **实际执行结果**：✅ 已完成。
+> 本仓门禁 `emotion_cpt.cli.check_contracts` 已进**两个上游的 CI**
+> （CPT `ci.yml:261`、emotion-core `ci.yml:122`），支持 `--upstream-root .` 单仓模式。
+> 判据后来从「比对实际值」改成了**「常量来源 / 9 列 / 契约版本 / 依赖方向」** ——
+> 因为上游改成从契约包 import 之后，值不可能漂，漂的是「有没有又手抄一份」。
+> 自证见 [GATE-SELFTEST.md §1](GATE-SELFTEST.md)。
 
-### 6.2 目标
+本仓的门禁要在**上游 CI 里**跑，才能真正守住边界。
 
-```
-本仓 deploy/systemd/      ← 唯一一份 unit 真相源
-本仓 deploy/cron/crontab  ← 全部 14 条作业（含原来仓外的 5 条）
-portal 仓                  ← 只保留拉取脚本，不再存 unit 副本
-```
+**做法**：本仓提供一个只读探针（`emotion_cpt.cli.contracts_probe`），输出机器可读的契约指纹；
+上游仓的 CI 加一个 job：拉取本仓的契约指纹，与自己代码里的实际值比对，不一致就红。
 
-### 6.3 crontab 双向对账门禁
+**为什么不是让上游 import 本仓**：见 §7 的依赖方向论证 —— 先用**校验**建立约束，
+确认稳定后再（P5，可选）升级为**依赖**。
 
-**仓内 → 线上**：仓里有、线上没有 ⇒ 红
-**线上 → 仓内**：线上有、仓里没有 ⇒ 红（这条正是那 4 条仓外作业的 catcher）
-
-**cron 的静默失败陷阱**（必须写进门禁的检查项）：
-- 路径不存在 ⇒ cron 直接跳过，**不报错**
-- 脚本丢了执行位 ⇒ `Permission denied`，**同样静默**
-  （上游 R43 踩过：仓内 git 模式 `100644`，靠 `install -m 755` 复制才拿到执行位）
-⇒ 门禁必须查：① 路径存在 ② `git ls-files -s` 显示 `100755` ③ 手动跑一次不报错
+**验收**：
+- 在上游 emotion-core 的 `levels.py` 里把 `BUY_BUFFER` 改成 1.03 ⇒ 上游 CI 红
+- 改回 ⇒ 绿
 
 ---
 
-## 7. P5 · 契约采纳（可选，2 天）
+## 7. P5/P6 · 契约采纳与上游切换（2 天）
+
+
+> 📌 **实际执行结果**：✅ 已完成（原计划里的「**可选**」变成了**必做**）。
+> 理由：P2 的**校验式**约束挡不住「上游自己手抄一份契约值」——
+> 两边各算各的买卖点价，**数值合法但结果不同**，只有改成 **import 契约包**才物理关闭通道。
+> 代价是契约成了对外 API ⇒ 走版本号 + 弃用期（已发布到 **v0.4.0**）。
+> P6 另统一了 **A 股价制与涨跌停价口径**（整数分算法），见 [P6-PRICE-CALIBER.md](P6-PRICE-CALIBER.md)。
 
 **这一步是唯一会让上游产生代码依赖的阶段，可以不做。**
 
@@ -297,16 +315,63 @@ from emotion_cpt.contracts.pricing import BUY_BUFFER
 
 ---
 
-## 8. P6 · 收尾与治理（0.5 天）
+## 8. P7 · 部署真相源归一（1 天）
 
-- 本仓文档与上游文档的**交叉引用**建立（哪条契约在哪个上游实现里）
-- 门禁全部接入 CI，且**门禁自证**记录在案
-- 本仓自身的 `check_doc_drift.py`：文档里的表数/列数/契约声明与代码一致
-- 剩余待裁决项归档（见 §9）
+
+> 📌 **实际执行结果**：✅ 已完成 —— 见 [P7-DEPLOY-TRUTH.md](P7-DEPLOY-TRUTH.md)。
+> ⚠️ 本节以下是**计划**（P7 开工前的勘察）；
+> 计划里的数字在 P7 完成后**已变**（unit 20→**21**、crontab 14→**16 条**、
+> unit 真相源副本 3 份→**1 份**，且改到**随契约包分发**）。
+
+### 6.1 触碰点（真机实测）
+
+| 类别 | 数量 |
+|---|---|
+| systemd unit 文件 | 20（5 CPT + 15 emotion） |
+| 线上 `/etc/systemd/system` 里的写死路径 | **43 处** |
+| 仓内硬编码仓路径 | **64 行** |
+| cron 脚本 | 10（CPT 仓内） |
+| 线上 crontab 作业 | **14 条**（仓内 9 + **仓外 5**） |
+| unit 真相源副本 | **3 份**（portal + 两个项目仓） |
+
+### 6.2 目标
+
+```
+本仓 deploy/systemd/      ← 唯一一份 unit 真相源
+本仓 deploy/cron/crontab  ← 全部 14 条作业（含原来仓外的 5 条）
+portal 仓                  ← 只保留拉取脚本，不再存 unit 副本
+```
+
+### 6.3 crontab 双向对账门禁
+
+**仓内 → 线上**：仓里有、线上没有 ⇒ 红
+**线上 → 仓内**：线上有、仓里没有 ⇒ 红（这条正是那 4 条仓外作业的 catcher）
+
+**cron 的静默失败陷阱**（必须写进门禁的检查项）：
+- 路径不存在 ⇒ cron 直接跳过，**不报错**
+- 脚本丢了执行位 ⇒ `Permission denied`，**同样静默**
+  （上游 R43 踩过：仓内 git 模式 `100644`，靠 `install -m 755` 复制才拿到执行位）
+⇒ 门禁必须查：① 路径存在 ② `git ls-files -s` 显示 `100755` ③ 手动跑一次不报错
 
 ---
 
-## 9. 风险登记
+## 9. P8 · 收尾与治理（0.5 天）
+
+
+- ✅ 本仓文档与上游文档的**交叉引用**建立
+  ⇒ [CROSS-REFERENCES.md](CROSS-REFERENCES.md)（**生成**的，`scripts/gen_cross_references.py`
+  重算时**逐个校验路径存在** ⇒ 上游挪文件 ⇒ **生成失败**，不会产出指向空气的文档）
+- ✅ 门禁全部接入 CI，且**门禁自证**记录在案
+  ⇒ [GATE-SELFTEST.md](GATE-SELFTEST.md)（每条门禁的判据 / 注入 / **曾漏过什么**）
+- ✅ 本仓自身的 `check_doc_drift.py`：文档里的表数/列数/契约声明与代码一致
+  ⇒ 判据：**contract-facts 块**（契约数字的机器可读真源）+ 列定义镜像 +
+  常量镜像 + 文件清单；自证 11 条注入用例（`tests/test_doc_drift_selftest.py`）
+- ✅ 剩余待裁决项归档 ⇒ [OPEN-QUESTIONS.md](OPEN-QUESTIONS.md)（**8 项**，含工程侧只暴露不裁决的）
+
+---
+
+## 10. 风险登记
+
 
 | # | 风险 | 影响 | 概率 | 缓解 |
 |---|---|---|---|---|
@@ -320,7 +385,11 @@ from emotion_cpt.contracts.pricing import BUY_BUFFER
 
 ---
 
-## 10. 待裁决项（**不是工程能单独决定的**）
+## 11. 待裁决项（**不是工程能单独决定的**）
+
+
+> 📌 **完整归档见 [OPEN-QUESTIONS.md](OPEN-QUESTIONS.md)**（含每项的可选项、代价、
+> 和「需要 owner 回答的那一句话」）。以下为摘要。
 
 以下问题由本仓**暴露**但**不裁决**，需要 owner 给口径：
 
@@ -334,7 +403,8 @@ from emotion_cpt.contracts.pricing import BUY_BUFFER
 
 ---
 
-## 11. 里程碑
+## 12. 里程碑
+
 
 | 里程碑 | 达成时 | 标志 |
 |---|---|---|

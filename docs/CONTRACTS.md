@@ -3,6 +3,26 @@
 > **机器可读版本是代码**：`src/emotion_cpt/contracts/`。
 > 本文只是它的说明；两者冲突时**以代码为准**。
 
+<!-- contract-facts
+tables: 52
+columns: 9
+constants: 6
+shared_tables: 7
+reverse_tables: 1
+owner_emotion: 37
+owner_cpt: 14
+owner_reverse: 1
+-->
+
+> **上面那块 `contract-facts` 是契约数字的机器可读真源**，
+> `emotion_cpt.cli.check_doc_drift` 逐项跟代码对账。
+> 改代码改了数字 ⇒ **必须回来改这一块**，否则门禁会红。
+>
+> ⚠️ 别的文档里散落的数字**不自动对账** —— 同一个「5 个价格常量」，
+> 在「迁移前的痛点」里是**历史陈述**（当时确实 5 个），
+> 在「产出物清单」里是**当前声明**（现在是 6 个）。
+> 正则分不清这两者 ⇒ 所以数字**只在这一处**，别处引用它。
+
 ## 1. 表归属（52 张 = 37 + 14 + 1）
 
 | 归属 | 张数 | 说明 |
@@ -39,18 +59,23 @@ CPT ──写──────────▶ intraday_seal_snapshot ──▶ 
 
 ⚠️ 「没行」= **判不了**，不是「没封板」。
 
-## 4. 5 个价格常量（唯一定义处）
+## 4. 6 个契约常量（唯一定义处）
 
-| 常量 | 值 | 原真源 |
+| 常量 | 值 | 迁移前的真源 |
 |---|---|---|
 | `BUY_BUFFER` | 1.02 | CPT `cpt/application/track_points.py:45` |
 | `SELL_BUFFER` | 0.97 | 同上 `:48` |
 | `STOP_LOSS_RATIO` | 0.95 | 同上 `:50` |
 | `BI_LOOKBACK` | 3 | 同上 `:53` |
 | `ZHONGSHU_LOOKBACK` | 2 | 同上 `:54` |
+| `PRICE_ROUND_DIGITS` | 2 | **P3 新增**（A 股最小变动单位 0.01 元，3 位是伪精度） |
 
-⇒ 这 5 个值原先被 emotion-core **手抄**了一份，且手抄副本的**行号引用已全部差 1 行**。
+⇒ 这 5 个价格常量原先被 emotion-core **手抄**了一份，且手抄副本的**行号引用已全部差 1 行**。
 统一后只有一份，任何一侧改动都会被门禁抓到。
+
+⇒ 现在的**唯一定义处**是 `src/emotion_cpt/contracts/pricing.py`；
+两个上游都改成 `from emotion_cpt.contracts.pricing import ...` ⇒
+「手抄副本」这个漂移通道**物理关闭**了。
 
 ## 5. 判据归属（ADR 0003 §E2「判据只许一处」）
 
