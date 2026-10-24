@@ -19,19 +19,24 @@
 |---|---|---|---|
 | **Q1** | **A** 保持三套并列，聚合页只做映射展示 | `emotion_cpt/web/aggregate/server.py` 的 `notice`（改成「owner 已裁决」） | 页面文案实测 |
 | **Q2** | **A** 以本库为准，Wind 差异记为「已知数据源差异」 | `emotion-core` 的 `check_limit_state_audit`：`only_self` 移出 problems，改记进日志 | 新测试断言「返回 None + 日志里有记录」 |
+| **Q2②** | ⚠️ 同上裁决的**后半**（2026-10-24 补做） | **watchdog 有自己的告警队列**（需  出队）⇒ 早已入队的 5 条**一直让 unit 红着** ⇒ 按裁决 ack 掉（ID 23-27，同一类：only_self 历史快照） | watchdog 退出码 0、unit 从  变 、队列 0 |
 | **Q3** | **删** `chanlun-pro-replica` | 代码目录**早已不在**；审计 md **归档**到 `/home/ubuntu/backups/chanlun-pro-audit/` | 目录检查 |
 | **Q4** | **删** CPT 侧 5 张遗留表（21,962 行） | 真库已 DROP + **已备份**；manifest / facts 块 / 文档同步到 47 张 | `check_manifest` 对真库 + 备份可还原 |
 | **Q5** | **不改**（仓名保持 `Emotion-CPT`） | 无（显式记录，免得下次又拿出来讨论） | — |
 | **Q6** | **A** 日报支持按作业跳过 skip 检测 | CPT `cron_daily_report.py` 的 `SKIP_EXEMPT_JOBS` + crontab 真相源给两个作业加日志重定向 | 2 条新测试（正向 + **反向**） |
 | **Q7** | **C** portal 仓的 24 个 unit 副本**不动** | 无（显式记录；portal 仓不是本项目建的，不单方面改） | — |
 
-### 裁决带来的两个**可验证**后果
+### 裁决带来的三个**可验证**后果
 
 1. **Q4 删表 ⇒ R67 的回滚脚本现在会明确报错**
    （`RAISE EXCEPTION「缺少备份表 … 无法回滚」`）。
    这是**故意**的：宁可回滚失败，也不要静默回滚到「少了一截」的状态。
    备份三件套在 `/home/ubuntu/backups/legacy-tables-20261024-*`。
-2. **Q4 删表 ⇒ 契约指纹变了两处**（顺手修的真缺口）：
+2. **Q2 只做了一半** —— 改了 （不再告警）**还不够**：
+   watchdog 有自己的告警队列（ 出队），早已入队的 5 条**一直让 unit 红着**
+   ⇒ 裁决要真正生效，得按裁决把队列里那几条处理掉
+   ⇒ 补做后：watchdog 退出码 0、unit  → 、队列 0
+3. **Q4 删表 ⇒ 契约指纹变了两处**（顺手修的真缺口）：
    - `contract_payload()` 原先**手写** 5 个 pricing 常量 ⇒ **P3 加的
      `PRICE_ROUND_DIGITS` 根本不在指纹里** ⇒ 现在改成**从模块内省**
    - 9 列的 payload **只带 `unit`、不带 `semantics`** ⇒
