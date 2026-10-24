@@ -224,12 +224,20 @@ def build_stock_payload(code: str) -> dict[str, Any]:
     levels = (points or {}).get("levels") or {}
     holding_action = (holding or {}).get("action")
 
+    shown = len(_verdicts(cpt_action, holding_action, strategies))
     return {
         "ok": True,
         "code": norm,
         "generated_at": datetime.now(UTC).isoformat(),
-        "notice": "并排展示，不做统一 —— owner 已裁决（Q1=A）："
-        "三套口径各自保留，本页只做映射展示",
+        # ⚠️ 「三套」是**制度**（三套口径各自保留），但**当天有数据的可能只有 2 套**
+        #   ⇒ 把实际展示的行数说出来，避免被误读成「少了口径」。
+        #   （第三套「情绪策略」当日无产出时，emotion-core 返回
+        #     「当日无策略产出（开关未开或休市）」⇒ 该行不渲染。）
+        "notice": (
+            "并排展示，不做统一 —— owner 已裁决（Q1=A）："
+            "三套口径各自保留，本页只做映射展示"
+            + (f"（本页展示 {shown} 套有数据的）" if shown < 3 else "")
+        ),
         "panels": {
             "cpt": {
                 "available": bool(snap or rec),
@@ -271,6 +279,7 @@ def build_stock_payload(code: str) -> dict[str, Any]:
         },
         "verdicts": _verdicts(cpt_action, holding_action, strategies),
         "conflicts": _conflicts(cpt_action, holding_action, strategies, levels.get("basis")),
+        "shown_calibers": shown,
     }
 
 
