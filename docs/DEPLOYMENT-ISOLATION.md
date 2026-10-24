@@ -16,7 +16,7 @@
 | **Python 环境** | **系统 python3**（零三方依赖） | 仓内 `.venv` | 仓内 `.venv` |
 | **依赖数据库** | **否** | 是 | 是 |
 | **对外监听** | 仅 `127.0.0.1` | `127.0.0.1` | `0.0.0.0`（8098） |
-| **nginx 入口** | `/dsh/` | `/cpt/` | `/emotion/` |
+| **nginx 入口** | `/ecpt/`（`/dsh/` 兼容别名） | `/cpt/` | `/emotion/` |
 | **读上游** | 只读 HTTP | — | — |
 | **被上游读** | 否（单向下游） | 是 | 是 |
 
@@ -77,7 +77,7 @@ Emotion-CPT 是**真相源的宿主**，但**不是所有作业/单元的 owner*
 > ⚠️ **快照，不是真相源** —— 真值在 `src/emotion_cpt/deploy/` 与 systemctl 里。
 > 重采：`python scripts/gen_deployment_isolation.py --collect`
 
-采集时间（UTC）：**2026-10-24 08:43:54Z**
+采集时间（UTC）：**2026-10-24 10:50:32Z**
 
 ### 5.1 监听端口
 
@@ -105,6 +105,7 @@ Emotion-CPT 是**真相源的宿主**，但**不是所有作业/单元的 owner*
 | `/` | `http://127.0.0.1:3080` |
 | `/api/dsh-free-search-settings/` | `http://127.0.0.1:3080` |
 | `/api/dsh-skill-explorer/` | `http://127.0.0.1:3080` |
+| `/ecpt/` | `http://127.0.0.1:8092/` |
 | `/dsh/` | `http://127.0.0.1:8092/` |
 
 ### 5.3 服务状态

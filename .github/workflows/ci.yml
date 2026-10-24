@@ -44,6 +44,10 @@ jobs:
       - name: 部署隔离说明的静态部分与生成器一致
         # 归属分组（谁负责哪些作业/单元）是**声明**出来的 ⇒ 不能手改
         run: python scripts/gen_deployment_isolation.py --check
+      - name: 公网反代门禁（Emotion-CPT 的路径必须已注册且要鉴权）
+        # 「反代齐平」不能只是一句声明 ⇒ 配置被无声删掉时要能报出来。
+        # CI 里没有公网 ⇒ 活体判据自动跳过，只校验静态一致。
+        run: python -m emotion_cpt.cli.check_nginx_route --skip-live
       - name: portal 镜像旁观门禁（只读，不碰 portal 仓）
         # owner 裁决 Q7=C「不动 portal 仓」⇒ 本仓**只读**它的镜像做三方对账，
         # 抓住 unit 漂移。portal 仓不在本机时自动跳过（不算通过也不算失败）。

@@ -100,7 +100,7 @@ def _static() -> str:
     out.append("| **Python 环境** | **系统 python3**（零三方依赖） | 仓内 `.venv` | 仓内 `.venv` |")
     out.append("| **依赖数据库** | **否** | 是 | 是 |")
     out.append("| **对外监听** | 仅 `127.0.0.1` | `127.0.0.1` | `0.0.0.0`（8098） |")
-    out.append("| **nginx 入口** | `/dsh/` | `/cpt/` | `/emotion/` |")
+    out.append("| **nginx 入口** | `/ecpt/`（`/dsh/` 兼容别名） | `/cpt/` | `/emotion/` |")
     out.append("| **读上游** | 只读 HTTP | — | — |")
     out.append("| **被上游读** | 否（单向下游） | 是 | 是 |")
     out.append("")

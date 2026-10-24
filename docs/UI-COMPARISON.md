@@ -39,7 +39,7 @@
 
 ## 3. 逐个看
 
-### 3.1 Emotion-CPT 门户（`/dsh/`）
+### 3.1 Emotion-CPT 门户（`/ecpt/`）
 
 ![Emotion-CPT 门户](img/01-emotion-cpt-门户.png)
 

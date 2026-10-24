@@ -117,7 +117,7 @@ Emotion-CPT/
     │   ├── emotion-dash-watchdog.sh   # ★ 看板存活看门狗
     │   └── README.md
     ├── nginx/
-    │   ├── dsh-facade.conf
+    │   ├── ecpt-facade.conf
     │   └── README.md
     └── systemd/README.md           # unit 真相源在包内（见下）
 ```
