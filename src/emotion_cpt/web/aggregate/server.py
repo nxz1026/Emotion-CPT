@@ -200,6 +200,74 @@ def _conflicts(
     return out
 
 
+def _cpt_quote(snap: dict[str, Any] | None) -> dict[str, Any]:
+    """从 CPT snapshot 提炼**行情**。
+
+    ⚠️ ``fetch_cpt_snapshot`` **早就在取这份数据**，只是 ``build_stock_payload``
+    压根没用它 ⇒ 页面连价格都没有（owner 反馈"信息量有点小"）。
+    ⇒ 这里是**零成本**的加料。
+    """
+    if not snap:
+        return {"available": False}
+    m = snap.get("market") or {}
+    candles = snap.get("candles") or []
+    last = candles[-1] if candles else {}
+    close = last.get("close")
+    open_ = last.get("open")
+    chg = None
+    if isinstance(close, (int, float)) and isinstance(open_, (int, float)) and open_:
+        chg = (close - open_) / open_ * 100
+    return {
+        "available": True,
+        "symbol": m.get("symbol") or snap.get("symbol"),
+        "board_label": m.get("board_label"),
+        "interval": m.get("interval"),
+        "bar_count": m.get("bar_count"),
+        "last_bar_date": m.get("last_bar_date"),
+        "close": close,
+        "open": open_,
+        "high": last.get("high"),
+        "low": last.get("low"),
+        "quote_volume": last.get("quote_volume"),
+        "last_amount": m.get("last_amount"),
+        "change_pct": chg,
+        "direction": last.get("direction"),
+    }
+
+
+def _cpt_levels_tree(snap: dict[str, Any] | None) -> dict[str, Any]:
+    """CPT 的**结构级别树**（确定性缠论最硬的部分，此前完全没显示）。
+
+    每个 level：级别号 / 元素数 / 最高 / 最低 / 时间跨度。
+    """
+    if not snap:
+        return {"available": False}
+    lt = snap.get("level_tree") or {}
+    if not lt.get("available"):
+        return {"available": False, "error": lt.get("error") or "无结构级别树"}
+    levels = []
+    for lv in lt.get("levels") or []:
+        els = lv.get("elements") or []
+        highs = [e.get("high") for e in els if isinstance(e.get("high"), (int, float))]
+        lows = [e.get("low") for e in els if isinstance(e.get("low"), (int, float))]
+        starts = [e.get("start_time") for e in els if isinstance(e.get("start_time"), int)]
+        ends = [e.get("end_time") for e in els if isinstance(e.get("end_time"), int)]
+        levels.append(
+            {
+                "level": lv.get("level"),
+                "parent_level": lv.get("parent_level"),
+                "count": len(els),
+                "high": max(highs) if highs else None,
+                "low": min(lows) if lows else None,
+                "start_time": min(starts) if starts else None,
+                "end_time": max(ends) if ends else None,
+                "kinds": sorted({str(e.get("kind")) for e in els if e.get("kind")}),
+            }
+        )
+    levels.sort(key=lambda x: (x.get("level") is None, -(x.get("level") or 0)))
+    return {"available": True, "levels": levels}
+
+
 def build_stock_payload(code: str) -> dict[str, Any]:
     """构建同票并排 payload。任一侧不可达都不影响另一侧。"""
     norm = norm_code(code)
@@ -250,6 +318,12 @@ def build_stock_payload(code: str) -> dict[str, Any]:
                 "divergence_status": (rec or {}).get("divergence_status"),
                 "price_ratio": (rec or {}).get("price_ratio"),
                 "structure": _cpt_structure(snap),
+                # ★ 加料：行情 / 结构级别树 / 引擎 / 数据质量
+                #   （fetch_cpt_snapshot 早就在取，只是没人用 ⇒ 零成本）
+                "quote": _cpt_quote(snap),
+                "levels_tree": _cpt_levels_tree(snap),
+                "engine": (snap or {}).get("engine_state") or {},
+                "quality": (snap or {}).get("data_quality") or {},
             },
             "emotion": {
                 "available": bool(status or holding),
