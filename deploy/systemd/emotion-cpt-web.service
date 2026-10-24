@@ -1,0 +1,25 @@
+[Unit]
+Description=Emotion-CPT 统一入口门面（门户 + 同票并排聚合页）
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/home/ubuntu/DSH/Emotion-CPT
+# 核心零依赖 ⇒ 用系统 python3 即可；PYTHONPATH 与 emotion-core 同款约定
+Environment=PYTHONPATH=/home/ubuntu/DSH/Emotion-CPT/src
+ExecStart=/usr/bin/python3 -m emotion_cpt.web.app --host 127.0.0.1 --port 8092
+Restart=on-failure
+RestartSec=3
+
+# Hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/home/ubuntu/DSH/Emotion-CPT
+
+[Install]
+WantedBy=multi-user.target
