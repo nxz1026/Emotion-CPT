@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "emotion-cpt"
-version = "0.2.1"
+version = "0.2.2"
 description = "CPT × emotion-core 的统一层：跨项目契约、统一数据层、统一 web 入口"
 requires-python = ">=3.12"
 readme = "README.md"

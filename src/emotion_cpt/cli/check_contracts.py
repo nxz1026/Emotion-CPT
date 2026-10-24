@@ -359,20 +359,24 @@ def _current_tag() -> str | None:
     读不到 ``pyproject.toml`` ⇒ 版本检查会被**静默跳过**。
     ⇒ 先问已安装的元数据，再退回仓内 pyproject。
     """
+    # ① 开发检出（editable / 源码树运行）⇒ 以**源码里的 pyproject** 为准。
+    #    ⚠️ editable 安装的 .dist-info 里版本是**安装那一刻**的，pyproject 改了它不会变
+    #    ⇒ 只看元数据会误报 stale-pin（2026-10-24 实测踩过）。
+    pyproject = pathlib.Path(__file__).resolve().parents[3] / "pyproject.toml"
+    if pyproject.exists():
+        m = re.search(r'(?m)^version\s*=\s*"([^"]+)"', pyproject.read_text(encoding="utf-8"))
+        if m:
+            return m.group(1)
+    # ② 装成包（CI 场景）⇒ 以**已安装的元数据**为准
     try:
         from importlib.metadata import PackageNotFoundError, version
 
         try:
             return version("emotion-cpt")
         except PackageNotFoundError:
-            pass
+            return None
     except Exception:  # noqa: BLE001
-        pass
-    pyproject = pathlib.Path(__file__).resolve().parents[3] / "pyproject.toml"
-    if not pyproject.exists():
         return None
-    m = re.search(r'(?m)^version\s*=\s*"([^"]+)"', pyproject.read_text(encoding="utf-8"))
-    return m.group(1) if m else None
 
 
 def check_no_upstream_imports() -> list[Issue]:
