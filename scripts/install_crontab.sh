@@ -24,13 +24,19 @@ fi
 
 echo "真相源：$TRUTH"
 
+# ⚠️ 校验口径必须与门禁（`check_crontab`）**一致**：按**作业行**比对，忽略注释。
+#   否则会出现「门禁绿、这个脚本报红」—— 两个工具对「一致」的定义不同，
+#   人就不知道该信哪个。（2026-10-24 实测踩过：真相源加了 `# owner:` 分组注释
+#   ⇒ 文本 diff 报差异，而 cron 行为完全没变。）
+_jobs() { grep -vE '^\s*(#|$)' "$1" | sed 's/[[:space:]]*$//'; }
+
 if [[ "${1:-}" == "--check" ]]; then
-  if crontab -l 2>/dev/null | diff -q - "$TRUTH" >/dev/null; then
-    echo "✅ 线上 crontab 已与真相源一致"
+  if diff -q <(_jobs <(crontab -l 2>/dev/null)) <(_jobs "$TRUTH") >/dev/null; then
+    echo "✅ 线上 crontab 已与真相源一致（按作业行比对，忽略注释）"
     exit 0
   fi
-  echo "❌ 线上 crontab 与真相源不一致" >&2
-  diff <(crontab -l 2>/dev/null) "$TRUTH" >&2 || true
+  echo "❌ 线上 crontab 与真相源不一致（按作业行比对）" >&2
+  diff <(_jobs <(crontab -l 2>/dev/null)) <(_jobs "$TRUTH") >&2 || true
   exit 1
 fi
 
@@ -42,10 +48,10 @@ echo "已备份原 crontab → $backup"
 
 crontab "$TRUTH"
 echo "已安装。校验中……"
-if crontab -l 2>/dev/null | diff -q - "$TRUTH" >/dev/null; then
-  echo "✅ 线上 crontab 已与真相源一致"
+if diff -q <(_jobs <(crontab -l 2>/dev/null)) <(_jobs "$TRUTH") >/dev/null; then
+  echo "✅ 线上 crontab 已与真相源一致（按作业行比对，忽略注释）"
 else
   echo "❌ 安装后校验不一致（已保留备份 $backup）" >&2
-  diff <(crontab -l 2>/dev/null) "$TRUTH" >&2 || true
+  diff <(_jobs <(crontab -l 2>/dev/null)) <(_jobs "$TRUTH") >&2 || true
   exit 1
 fi

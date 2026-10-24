@@ -32,6 +32,18 @@ _MANAGED = (
     "emotion-lab",
 )
 
+#: unit 里的**归属声明**：``# owner: <名字>``
+#: ⚠️ 21 个 unit 里只有 1 个是 Emotion-CPT 的 ⇒ 归属必须**显式**，
+#:    不能靠文件名前缀猜（猜错了就没人发现）。
+_OWNER_RE = re.compile(r"^#\s*owner:\s*([A-Za-z0-9_.-]+)", re.M)
+
+
+def _owner_of(text: str) -> str:
+    """读 unit 的归属声明。"""
+    m = _OWNER_RE.search(text)
+    return m.group(1) if m else ""
+
+
 #: 从 unit 里抽路径
 _WORKING_DIR = re.compile(r"^WorkingDirectory=(\S+)", re.M)
 _EXEC_START = re.compile(r"^ExecStart=(\S+)", re.M)
@@ -99,6 +111,11 @@ def main(argv: list[str] | None = None) -> int:
             if not Path(raw).exists():
                 issues.append(f"{name}: EnvironmentFile 不存在 {raw}")
 
+    # ── ①.5 归属必须显式（21 个里只有 1 个是本仓的，不能靠猜）──
+    for name, text in sorted(repo_units.items()):
+        if not _owner_of(text):
+            issues.append(f"{name}: 没有声明 owner（unit 头加 ``# owner: <名字>``）")
+
     # ── ② 双向对账 ──
     if not args.skip_live:
         live = _live_units()
@@ -117,7 +134,14 @@ def main(argv: list[str] | None = None) -> int:
         for issue in issues:
             print(f"  {issue}", file=sys.stderr)
         return 1
-    print(f"✅ systemd unit 一致（{len(repo_units)} 个，路径存在、执行位、双向对账全过）")
+    # ── 按归属分组报数（宿主 ≠ owner）──
+    groups: dict[str, int] = {}
+    for text in repo_units.values():
+        owner = _owner_of(text) or "未归属"
+        groups[owner] = groups.get(owner, 0) + 1
+    detail = "、".join(f"{owner} {n} 个" for owner, n in sorted(groups.items()))
+    print(f"✅ systemd unit 一致（{len(repo_units)} 个：{detail}）")
+    print("   ⇒ 真相源宿主 = Emotion-CPT；**变更责任在 owner 那一栏**")
     return 0
 
 
