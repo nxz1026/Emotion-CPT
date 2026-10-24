@@ -1,3 +1,4 @@
+# owner: emotion-core
 [Unit]
 Description=Emotion Core Daily Review Report
 # 独立单元，不进 daily 主链：报告依赖表比主链多（持仓/题材/情绪），任一缺口

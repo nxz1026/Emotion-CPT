@@ -23,6 +23,11 @@ CRONTAB_PATH: Path = Path(__file__).resolve().parent / "cron" / "crontab"
 _LOG_RE = re.compile(r">>\s*(\S+)")
 
 
+#: 归属分组注释：``# owner: <名字>``
+#: ⚠️ 这是**归属声明**，不是注释 —— 门禁按它分组报告。
+_OWNER_RE = re.compile(r"^#\s*[-─]*\s*owner:\s*([A-Za-z0-9_.-]+)", re.M)
+
+
 @dataclass(frozen=True)
 class CronJob:
     """一条 crontab 作业。
@@ -37,27 +42,58 @@ class CronJob:
     command: str
     script: str
     log: str | None
+    #: **归属**：这条作业归哪个仓（``emotion-cpt`` / ``cpt`` / ``jc`` / ``ops`` …）
+    #: ⚠️ 「真相源的宿主」≠「作业的 owner」—— Emotion-CPT 存着全部副本，
+    #:    但变更责任在原仓。归属显式化，报红时才能说清「这条归谁」。
+    owner: str = ""
 
 
 def parse_crontab(text: str) -> tuple[CronJob, ...]:
-    """把 crontab 文本解析成作业序列（保持文件里的顺序）。"""
+    """把 crontab 文本解析成作业序列（保持文件里的顺序）。
+
+    **归属**由 ``# owner: <名字>`` 分组注释声明 ⇒ 每条作业带上它的 owner。
+    没声明 owner 的作业归 ``""``（⇒ 门禁会当「未归属」单独点名）。
+    """
+    # 先算出每个分组注释的**行号**，再顺着走
+    owner_at: list[tuple[int, str]] = [
+        (m.start(), m.group(1)) for m in _OWNER_RE.finditer(text)
+    ]
+
     jobs: list[CronJob] = []
+    pos = 0
     for raw in text.splitlines():
         line = raw.strip()
         if not line or line.startswith("#"):
+            pos += len(raw) + 1
             continue
         parts = line.split(None, 5)
         if len(parts) < 6:
             # 形如 ``SHELL=/bin/bash`` 的环境赋值行，不是作业
+            pos += len(raw) + 1
             continue
         schedule = " ".join(parts[:5])
         command = parts[5].strip()
         m = _LOG_RE.search(command)
         log = m.group(1) if m else None
         script = command.split()[0] if command.split() else ""
+        # 归属 = 最后一个出现在本行**之前**的分组注释
+        owner = ""
+        for at, name in owner_at:
+            if at < pos:
+                owner = name
+            else:
+                break
         jobs.append(
-            CronJob(line=line, schedule=schedule, command=command, script=script, log=log)
+            CronJob(
+                line=line,
+                schedule=schedule,
+                command=command,
+                script=script,
+                log=log,
+                owner=owner,
+            )
         )
+        pos += len(raw) + 1
     return tuple(jobs)
 
 
@@ -65,6 +101,17 @@ def load_crontab(path: Path | None = None) -> tuple[CronJob, ...]:
     """读 crontab 真相源并解析。"""
     p = path or CRONTAB_PATH
     return parse_crontab(p.read_text(encoding="utf-8"))
+
+
+def group_by_owner(
+    jobs: tuple[CronJob, ...] | None = None,
+) -> dict[str, list[CronJob]]:
+    """按归属分组（保持组内顺序）。"""
+    jobs = load_crontab() if jobs is None else jobs
+    out: dict[str, list[CronJob]] = {}
+    for job in jobs:
+        out.setdefault(job.owner or "(未归属)", []).append(job)
+    return out
 
 
 def jobs_from_crontab(path: Path | None = None) -> tuple[tuple[str, str], ...]:

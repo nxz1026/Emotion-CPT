@@ -1,18 +1,37 @@
 # ─────────────────────────────────────────────────────────────────────────
 # Emotion-CPT 管理的**线上 crontab 全量**（2026-10-24 从线上拉取）
 #
-# 归属说明（每条归哪个仓）：
-#   · deploy/cron/*.sh（CPT 仓内）      → CPT 的作业
-#   · emotion-dash-watchdog.sh（本仓）  → emotion 看板存活看门狗
-#   · /home/ubuntu/bin/*.sh（外部）      → 别的项目（jc-retention / 备份）
-#     —— 脚本**不在本仓**，但**必须在这里登记**：
-#        丢了不会有任何提示，只有「重建环境后作业静默消失」
+# ⚠️ 本文件是**唯一真相源**：任何增删都要改这里，且与线上双向一致
+#    （门禁 `emotion_cpt.cli.check_crontab`）。
 #
-# ⚠️ 本文件是**唯一真相源**：任何增删都要改这里，且与线上双向一致（门禁 check_crontab）。
-# ⚠️ 外部脚本的**存在性 + 执行位**由门禁检查，避免重建环境后静默丢作业。
+# ## 归属（`# owner:` 分组，机器可读）
+#
+# 每条作业归哪个仓，由下面的 `# owner: <名字>` 分组注释声明 ⇒
+# 门禁**按归属分组**报告（报红时直接说「这条归谁」）。
+#
+# ⚠️ **Emotion-CPT 是真相源的宿主，不是所有作业的 owner。**
+#    副本收在一处（消灭三份副本），但**变更责任仍在原仓** ——
+#    这两件事混在一起，才叫纠缠。
+#
+#   · owner: emotion-cpt  本仓自己的作业（本仓负责）
+#   · owner: cpt          CPT 仓的作业（代管：副本在此，变更责任在 CPT 仓）
+#   · owner: jc           jc-retention 项目的作业（外部：脚本不在任何仓）
+#   · owner: ops          运维备份的作业（外部：脚本不在任何仓）
+#
+# ⚠️ 外部脚本（jc / ops）**不在任何仓**，但**必须在这里登记**：
+#    丢了不会有任何提示，只有「重建环境后作业静默消失」。
+#    门禁检查它们的**存在性 + 执行位**。
 # ─────────────────────────────────────────────────────────────────────────
+
+# ── owner: jc ───────────────────────────────────────────────────────────────
 */10 * * * * bash /home/ubuntu/bin/jc-ingest-run.sh >> /home/ubuntu/logs/ingest-cron.log 2>&1
+0 18 * * * /home/ubuntu/bin/jc-staging-retention.sh --apply >> /home/ubuntu/logs/jc-staging-retention.log 2>&1
+30 18 * * * /home/ubuntu/bin/jc-ops-retention.sh >> /home/ubuntu/logs/ops-retention.log 2>&1
+
+# ── owner: emotion-cpt（本仓负责）──────────────────────────────────────────
 */5 * * * * /home/ubuntu/DSH/Emotion-CPT/deploy/cron/emotion-dash-watchdog.sh >> /home/ubuntu/logs/ec-dash-watchdog.log 2>&1
+
+# ── owner: cpt（代管：变更责任在 CPT 仓）───────────────────────────────────
 50 9 * * * /home/ubuntu/DSH/Chan_Pattern_Trader/deploy/cron/factor-recompute-daily.sh >> /home/ubuntu/logs/factor-recompute.log 2>&1
 45 9 * * * /home/ubuntu/DSH/Chan_Pattern_Trader/deploy/cron/factor-carry-forward.sh >> /home/ubuntu/logs/factor-carry-forward.log 2>&1
 30 11 * * * /home/ubuntu/DSH/Chan_Pattern_Trader/deploy/cron/factor-carry-forward.sh >> /home/ubuntu/logs/factor-carry-forward.log 2>&1
@@ -20,14 +39,10 @@
 10 4 * * * /home/ubuntu/DSH/Chan_Pattern_Trader/deploy/cron/run-metric-prune-daily.sh >> /home/ubuntu/logs/run-metric-prune.log 2>&1
 30 4 * * * /home/ubuntu/DSH/Chan_Pattern_Trader/deploy/cron/dashboard-run-prune-daily.sh >> /home/ubuntu/logs/dashboard-run-prune.log 2>&1
 0 11 * * * /home/ubuntu/DSH/Chan_Pattern_Trader/deploy/cron/cron-daily-report.sh >> /home/ubuntu/logs/cron-daily-report.log 2>&1
-0 1 * * 0 /home/ubuntu/bin/backup-db.sh >> /home/ubuntu/logs/db-backup-cron.log 2>&1
-
 30 7 * * * /home/ubuntu/DSH/Chan_Pattern_Trader/deploy/cron/track-maintenance-daily.sh >> /home/ubuntu/logs/track-maintenance.log 2>&1
-
 10 10 * * * /home/ubuntu/DSH/Chan_Pattern_Trader/deploy/cron/watchlist-daily-summary.sh >> /home/ubuntu/logs/watchlist-daily-summary.log 2>&1
-
 */15 * * * * /home/ubuntu/DSH/Chan_Pattern_Trader/deploy/cron/watchlist-snapshot.sh >> /home/ubuntu/logs/watchlist-snapshot.log 2>&1
-
 0 */2 * * * /home/ubuntu/DSH/Chan_Pattern_Trader/deploy/cron/watch-period-check.sh >> /home/ubuntu/logs/watch-period-check.log 2>&1
-0 18 * * * /home/ubuntu/bin/jc-staging-retention.sh --apply >> /home/ubuntu/logs/jc-staging-retention.log 2>&1
-30 18 * * * /home/ubuntu/bin/jc-ops-retention.sh >> /home/ubuntu/logs/ops-retention.log 2>&1
+
+# ── owner: ops（外部：运维备份）────────────────────────────────────────────
+0 1 * * 0 /home/ubuntu/bin/backup-db.sh >> /home/ubuntu/logs/db-backup-cron.log 2>&1

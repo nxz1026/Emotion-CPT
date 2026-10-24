@@ -1,3 +1,4 @@
+# owner: emotion-core
 [Unit]
 Description=Emotion Core Lab Web (read-only lab dashboard, port 8091)
 After=network.target postgresql.service

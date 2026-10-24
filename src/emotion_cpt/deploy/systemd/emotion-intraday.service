@@ -1,3 +1,4 @@
+# owner: emotion-core
 [Unit]
 Description=Emotion Core 盘中触发扫描（读 CPT 封板快照一轮判触发，ADR 0003 §D7）
 Documentation=https://github.com/nxz1026/emotion-core/blob/main/docs/decisions/README.md

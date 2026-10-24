@@ -1,3 +1,4 @@
+# owner: emotion-core
 [Unit]
 Description=Emotion Core Link Watchdog
 # 刻意**不** Requires/After=emotion-core-daily.service：看门狗必须在主链死亡时

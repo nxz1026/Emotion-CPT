@@ -1,3 +1,4 @@
+# owner: cpt
 [Unit]
 Description=CPT A-share snapshot batch
 Documentation=file:///home/ubuntu/DSH/Chan_Pattern_Trader/scripts/snapshot_a_share_batch.py

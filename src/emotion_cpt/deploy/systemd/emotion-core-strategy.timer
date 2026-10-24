@@ -1,3 +1,4 @@
+# owner: emotion-core
 [Unit]
 Description=Emotion Core strategy observer: weekdays 17:50 Shanghai (after daily pipeline)
 After=emotion-core-daily.timer

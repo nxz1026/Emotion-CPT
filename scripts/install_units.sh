@@ -66,7 +66,8 @@ echo "已备份线上同名单元 → $backup"
 
 for u in "${UNITS[@]}"; do
   rel="${u#"$TRUTH"/}"
-  install -D -m 0644 "$u" "$SYSTEMD_DIR/$rel"
+  # ⚠️ /etc/systemd/system 要 root ⇒ 必须 sudo（这台机器上免密）
+  sudo -n install -D -m 0644 "$u" "$SYSTEMD_DIR/$rel"
 done
 
 sudo -n systemctl daemon-reload

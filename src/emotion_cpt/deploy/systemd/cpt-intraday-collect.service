@@ -1,3 +1,4 @@
+# owner: cpt
 [Unit]
 Description=CPT 盘中采集守护（只采集，不判定；ADR 0003 §E2 分工）
 Documentation=file:///home/ubuntu/DSH/Chan_Pattern_Trader/docs/rebuild-plan-review.md

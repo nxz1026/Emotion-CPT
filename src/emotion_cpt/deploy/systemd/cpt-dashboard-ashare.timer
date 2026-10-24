@@ -1,3 +1,4 @@
+# owner: cpt
 [Unit]
 Description=CPT A-share snapshot batch timer (08:00 UTC = 16:00 北京)
 # 跟主服务错开：cpt-dashboard 服务默认每 30s 拉加密行情；快照跑的那一两分钟 A 股
