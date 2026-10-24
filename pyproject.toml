@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "emotion-cpt"
-version = "0.3.0"
+version = "0.4.0"
 description = "CPT × emotion-core 的统一层：跨项目契约、统一数据层、统一 web 入口"
 requires-python = ">=3.12"
 readme = "README.md"
@@ -30,6 +30,11 @@ emotion-cpt-probe           = "emotion_cpt.cli.probe:main"
 [tool.setuptools.packages.find]
 where = ["src"]
 include = ["emotion_cpt*"]
+
+[tool.setuptools.package-data]
+# ★ unit 真相源随包分发：任何装了契约包的仓都能读到它
+#   （emotion-core 的架构测试据此做**跨仓**对账，而不是各读各的副本）
+emotion_cpt = ["deploy/systemd/*.service", "deploy/systemd/*.timer", "deploy/systemd/*.md"]
 
 [tool.ruff]
 line-length = 100

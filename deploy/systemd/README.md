@@ -1,9 +1,12 @@
-# systemd unit 真相源
+# 部署真相源已迁至 Emotion-CPT
 
-**本目录是 unit 的唯一真相源**（计划态）。
+**唯一真相源**：`Emotion-CPT/src/emotion_cpt/deploy/systemd/`（随契约包分发，任何装了
+`emotion-cpt` 的仓都能读到）。
 
-现状：线上 unit 的真相源在 `DSH/portal/deploy/systemd-units/`（`portal-sync-units.timer`
-每日 04:00 拉取同步），而**两个上游项目仓里各存了一份副本** —— 实测逐字相同，
-也就是说有**两份必须手动同步的重复**。本仓上线后，这个重复被消除。
+迁移日期：2026-10-24。此前本目录是**第二份副本** —— 线上 `/etc/systemd/system`
+与仓内副本曾严重漂移过（2026-10-07 审计记录），而副本之间又各自漂了一次。
 
-搬迁时需改的写死路径：仓内 64 行 + 线上 43 处。
+现在：
+- 只有一份 unit 真相源，在 Emotion-CPT 里；
+- `emotion_cpt.cli.check_unit_paths` 门禁做**双向对账**（仓内 ↔ 线上）；
+- 任何改动请改 Emotion-CPT，然后由 `scripts/install_units.sh` 装到线上。
