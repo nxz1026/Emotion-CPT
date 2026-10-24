@@ -44,6 +44,12 @@ jobs:
       - name: 部署隔离说明的静态部分与生成器一致
         # 归属分组（谁负责哪些作业/单元）是**声明**出来的 ⇒ 不能手改
         run: python scripts/gen_deployment_isolation.py --check
+      - name: portal 镜像旁观门禁（只读，不碰 portal 仓）
+        # owner 裁决 Q7=C「不动 portal 仓」⇒ 本仓**只读**它的镜像做三方对账，
+        # 抓住 unit 漂移。portal 仓不在本机时自动跳过（不算通过也不算失败）。
+        run: python -m emotion_cpt.cli.check_portal_mirror
+      - name: portal 镜像门禁自证（必须还能报）
+        run: python -m pytest tests/test_portal_mirror_gate.py -q
       - name: 隔离性自证（上游全挂时门面必须照常工作）
         # 「独立故障域」不是设计声明，是会失败的断言
         run: python -m pytest tests/test_facade_isolation.py -q
