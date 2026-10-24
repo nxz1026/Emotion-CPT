@@ -39,6 +39,31 @@ ENTRIES: Final[tuple[tuple[str, str, str, str], ...]] = (
 )
 
 
+#: **别的项目**的入口前缀 —— 它们的 location 在 nginx 上 ⇒ 必须**绝对路径**。
+#: （本门面的入口不在这里 ⇒ 走 :func:`entry_href` 按当前挂载前缀拼。）
+EXTERNAL_ENTRY_PREFIXES: Final[tuple[str, ...]] = ("/cpt/", "/emotion/")
+
+
+def entry_href(path: str, prefix: str = "") -> str:
+    """门户上某个入口的 href。
+
+    ⚠️ **本门面的入口必须按「当前请求的前缀」拼**：
+    门面**同时**挂在 ``/ecpt/``（canonical）与 ``/dsh/``（兼容别名）下
+    ⇒ 写死任何一个都会让另一个坏。
+
+    ⇒ 前缀从 nginx 的 ``X-Forwarded-Prefix`` 头拿（直连 8092 时没有该头
+    ⇒ 前缀为空 ⇒ 链接是根路径 ⇒ **自洽**）。
+
+    ⇒ 别的项目（``/cpt/``、``/emotion/``）是**它们自己的** nginx location
+    ⇒ 保持**绝对路径**，别加前缀。
+    """
+    if path.startswith(EXTERNAL_ENTRY_PREFIXES):
+        return path
+    # ⚠️ 前缀为空（直连 8092，没有 X-Forwarded-Prefix 头）⇒ 用**绝对**根路径
+    #   （写成相对路径浏览器也能解析，但**不直白**、也不好测）
+    return (prefix or "/") + path.lstrip("/")
+
+
 def nginx_location_snippet() -> str:
     """生成 nginx location 片段（供 ``deploy/nginx/`` 维护与 P7 的真相源归一）。"""
     return f"""    # --- Emotion-CPT 统一门面（2026-10-24）---
@@ -54,4 +79,12 @@ def nginx_location_snippet() -> str:
     }}"""
 
 
-__all__ = ("DEFAULT_PORT", "ENTRIES", "HOST", "NGINX_PREFIX", "nginx_location_snippet")
+__all__ = (
+    "DEFAULT_PORT",
+    "ENTRIES",
+    "EXTERNAL_ENTRY_PREFIXES",
+    "HOST",
+    "NGINX_PREFIX",
+    "entry_href",
+    "nginx_location_snippet",
+)

@@ -91,10 +91,51 @@ def check_live(base: str) -> tuple[list[str], bool]:
     return [f"公网 {NGINX_PREFIX} 返回 {code}（期望 401/403）"], True
 
 
+def check_links_follow_prefix(base: str, prefix: str) -> list[str]:
+    """带前缀请求门面 ⇒ 页面里**本门面**的链接必须带该前缀。
+
+    ⚠️ 为什么要有：「页面上的子链接指向一个 nginx 上**不存在**的 location」
+    是**静默**的（用户点了才 404）⇒ 必须有断言钉住。
+
+    ⇒ 本门面的链接（``/aggregate``）必须带前缀；
+    ⇒ 别的项目的入口（``/cpt/``、``/emotion/``）**必须保持绝对、不加前缀**
+    （它们是**它们自己的** nginx location）。
+    """
+    import re
+    import urllib.request
+
+    issues: list[str] = []
+    url = f"{base}/"
+    try:
+        req = urllib.request.Request(url, headers={"X-Forwarded-Prefix": prefix})
+        with urllib.request.urlopen(req, timeout=15) as resp:  # noqa: S310
+            html = resp.read().decode("utf-8", errors="replace")
+    except (urllib.error.URLError, OSError) as exc:
+        print(f"  (探不到门面：{exc} ⇒ 跳过链接判据)", file=sys.stderr)
+        return []
+    hrefs = set(re.findall(r'href="([^"]+)"', html))
+    own = [h for h in hrefs if "aggregate" in h]
+    if not own:
+        return [f"门户页上找不到「同票并排」的链接（href 集合：{sorted(hrefs)}）"]
+    for h in own:
+        if not h.startswith(prefix):
+            issues.append(
+                f"门户页的链接 {h!r} **没带挂载前缀** {prefix!r} ⇒ "
+                f"点下去会落到 nginx 上不存在的路径"
+            )
+    for h in hrefs:
+        if h.startswith(("/cpt/", "/emotion/")) and h.startswith(prefix):
+            issues.append(f"别的项目的入口 {h!r} 被错误地加了本门面的前缀")
+    return issues
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Emotion-CPT 公网反代门禁")
     parser.add_argument("--skip-live", action="store_true", help="不探公网（CI 用）")
     parser.add_argument("--public-base", default=PUBLIC_BASE)
+    parser.add_argument(
+        "--facade-base", default="http://127.0.0.1:8092", help="门面本地地址（探链接用）"
+    )
     args = parser.parse_args(argv)
 
     issues = check_static()
@@ -103,6 +144,9 @@ def main(argv: list[str] | None = None) -> int:
         live_issues, probed = check_live(args.public_base)
         issues.extend(live_issues)
         live_note = "已探测公网" if probed else "探不到公网 ⇒ 跳过活体判据"
+        # 链接是否跟着挂载前缀走（门面同时挂在 /ecpt/ 与 /dsh/ 下）
+        for pfx in ("/ecpt/", "/dsh/"):
+            issues.extend(check_links_follow_prefix(args.facade_base, pfx))
 
     if issues:
         print(f"❌ 反代门禁失败（{len(issues)} 项）：", file=sys.stderr)

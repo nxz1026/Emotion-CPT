@@ -37,7 +37,12 @@ from typing import Any
 from urllib.parse import parse_qs, urlsplit
 
 from .aggregate.server import build_stock_payload
-from .facade import DEFAULT_PORT, ENTRIES, HOST  # noqa: F401  （入口定义在 facade 里）
+from .facade import (  # noqa: F401  （入口定义在 facade 里）
+    DEFAULT_PORT,
+    ENTRIES,
+    HOST,
+    entry_href,
+)
 
 _LOG = logging.getLogger("emotion_cpt.web")
 
@@ -89,10 +94,11 @@ def _page(title: str, body: str) -> bytes:
 <body><div class="wrap">{body}</div></body></html>""".encode()
 
 
-def _portal() -> bytes:
+def _portal(prefix: str = "") -> bytes:
     cards = "\n".join(
         f'<div class="card"><span class="tag">{escape(tag)}</span>'
-        f'<h3><a href="{escape(path)}">{escape(name)}</a></h3><p>{escape(desc)}</p></div>'
+        f'<h3><a href="{escape(entry_href(path, prefix))}">{escape(name)}</a></h3>'
+        f"<p>{escape(desc)}</p></div>"
         for path, name, desc, tag in ENTRIES
     )
     body = f"""
@@ -108,9 +114,9 @@ Emotion-CPT 不合并进程：CPT（8010）/ emotion-core（8098）/ lab（8091�
     return _page("统一入口", body)
 
 
-def _aggregate_page(code: str, payload: dict[str, Any] | None) -> bytes:
+def _aggregate_page(code: str, payload: dict[str, Any] | None, prefix: str = "") -> bytes:
     input_box = f"""
-<form action="/aggregate/stock/{escape(code)}" method="get">
+<form action="{escape(prefix)}aggregate/stock/{escape(code)}" method="get">
 <input type="text" name="code" value="{escape(code)}" placeholder="6 位代码，如 600519">
 <button type="submit">并排</button></form>"""
     if not payload or not payload.get("ok"):
@@ -259,21 +265,40 @@ class FacadeHandler(BaseHTTPRequestHandler):
             "application/json; charset=utf-8",
         )
 
+    def _prefix(self) -> str:
+        r"""本门面的**公网挂载前缀**（如 ``/ecpt/``）。
+
+        nginx 剥掉了前缀（\`proxy_pass ...:8092/\`）⇒ 后端看不到自己在哪
+        ⇒ 由 nginx 用 \`X-Forwarded-Prefix\` 头告诉它。
+        ⇒ 直连 8092 时没有该头 ⇒ 前缀为空 ⇒ 链接走根路径 ⇒ **自洽**。
+
+        ⚠️ 不返回前缀 ⇒ 页面上的「同票并排」会指向 \`/aggregate\`
+        ⇒ 那是 nginx 上**不存在**的 location ⇒ 404。
+        """
+        raw = self.headers.get("X-Forwarded-Prefix", "") or ""
+        raw = raw.strip()
+        if not raw:
+            return ""
+        if not raw.startswith("/"):
+            raw = "/" + raw
+        return raw if raw.endswith("/") else raw + "/"
+
     def do_GET(self) -> None:  # noqa: N802
+        prefix = self._prefix()
         parsed = urlsplit(self.path)
         path = parsed.path.rstrip("/") or "/"
         query = parse_qs(parsed.query)
 
         if path == "/":
-            self._send(_portal())
+            self._send(_portal(prefix))
             return
         if path == "/aggregate":
             code = (query.get("code") or ["600519"])[0]
-            self._send(_aggregate_page(code, build_stock_payload(code)))
+            self._send(_aggregate_page(code, build_stock_payload(code), prefix))
             return
         m = re.fullmatch(r"/aggregate/stock/([0-9]{1,6})", path)
         if m:
-            self._send(_aggregate_page(m.group(1), build_stock_payload(m.group(1))))
+            self._send(_aggregate_page(m.group(1), build_stock_payload(m.group(1)), prefix))
             return
         m = re.fullmatch(r"/api/aggregate/stock/([0-9]{1,6})", path)
         if m:
@@ -282,7 +307,10 @@ class FacadeHandler(BaseHTTPRequestHandler):
         if path == "/api/health":
             self._json(_health())
             return
-        self._send(_page("404", "<h1>404</h1><p>没有这个路径。<a href='/'>回门户</a></p>"), 404)
+        self._send(
+            _page("404", f"<h1>404</h1><p>没有这个路径。<a href='{prefix or '/'}'>回门户</a></p>"),
+            404,
+        )
 
     def do_HEAD(self) -> None:  # noqa: N802
         self.send_response(200)
