@@ -188,3 +188,27 @@ def test_version_normalisation():
     """``v0.1.0`` 与 ``0.1.0`` 是同一个东西。"""
     assert check_contracts._norm_version("v0.1.0") == check_contracts._norm_version("0.1.0")
     assert check_contracts._norm_version("v0.1.0") != check_contracts._norm_version("v0.0.1")
+
+
+def test_version_single_source():
+    """★ 版本号只有一个来源：包元数据。
+
+    2026-10-24 出现过 ``__version__`` 写死 0.1.0、而 pyproject 已是 0.2.0
+    ⇒ 同一个仓里两个版本号。整个项目存在的意义就是消灭这种事，自己不能犯。
+    """
+    import emotion_cpt
+
+    pyproject = Path(__file__).resolve().parents[1] / "pyproject.toml"
+    if not pyproject.exists():
+        pytest.skip("源码树里没有 pyproject.toml（未以仓根运行）")
+    import re
+
+    m = re.search(r'(?m)^version\s*=\s*"([^"]+)"', pyproject.read_text(encoding="utf-8"))
+    assert m, "pyproject.toml 里没有 version"
+    try:
+        from importlib.metadata import version
+
+        installed = version("emotion-cpt")
+    except Exception:  # noqa: BLE001
+        pytest.skip("本仓未以包形式安装")
+    assert emotion_cpt.__version__ == installed == m.group(1)

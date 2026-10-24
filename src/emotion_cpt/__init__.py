@@ -9,6 +9,22 @@
 
 from __future__ import annotations
 
-__version__ = "0.1.0"
+#: 版本号**从已安装的包元数据读**，不写死。
+#:
+#: ⚠️ 写死会自己漂：2026-10-24 就出现过 ``__version__`` 还写着 0.1.0、
+#: 而包元数据已经是 0.2.0（改了 pyproject 的 version 但没改这里）——
+#: **同一个仓里两个版本号**，而整个项目存在的意义就是消灭这种事。
+#:
+#: 读不到的场合（直接从源码树跑、没装成包）⇒ 退到一个明确的 dev 标记，
+#: 绝不假装自己是某个正式版本。
+try:  # pragma: no cover - 环境相关
+    from importlib.metadata import PackageNotFoundError, version
+
+    try:
+        __version__ = version("emotion-cpt")
+    except PackageNotFoundError:
+        __version__ = "0.0.0+not-installed"
+except Exception:  # pragma: no cover
+    __version__ = "0.0.0+unknown"
 
 __all__ = ["__version__"]
