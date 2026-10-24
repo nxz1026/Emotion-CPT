@@ -83,7 +83,7 @@ MAPPING: list[tuple[str, str, str, str]] = [
         "`src/emotion_cpt/db/config.py` + `connection.py`",
     ),
     (
-        "**表 manifest**（52 张）",
+        "**表 manifest**（47 张）",
         "—",
         "`src/emotion_core/data/schema.py`（DDL 侧）",
         "`src/emotion_cpt/contracts/tables.py`",
@@ -160,7 +160,7 @@ def _table_section() -> str:
     for t in tables.TABLES:
         by_owner.setdefault(t.owner, []).append(t)
 
-    lines = ["## 1. 表归属（52 张）", ""]
+    lines = ["## 1. 表归属（47 张）", ""]
     lines.append("| 归属 | 张数 | 写入方 | 被谁读 |")
     lines.append("|---|---|---|---|")
     for owner, items in sorted(by_owner.items()):

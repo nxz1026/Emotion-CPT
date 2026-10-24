@@ -4,13 +4,13 @@
 > 本文只是它的说明；两者冲突时**以代码为准**。
 
 <!-- contract-facts
-tables: 52
+tables: 47
 columns: 9
 constants: 6
 shared_tables: 7
 reverse_tables: 1
 owner_emotion: 37
-owner_cpt: 14
+owner_cpt: 9
 owner_reverse: 1
 -->
 
@@ -23,12 +23,12 @@ owner_reverse: 1
 > 在「产出物清单」里是**当前声明**（现在是 6 个）。
 > 正则分不清这两者 ⇒ 所以数字**只在这一处**，别处引用它。
 
-## 1. 表归属（52 张 = 37 + 14 + 1）
+## 1. 表归属（47 张 = 37 + 9 + 1）
 
 | 归属 | 张数 | 说明 |
 |---|---|---|
 | emotion-core 自有 | **37** | 与 `emotion_core/data/schema.py` 的 DDL **一一对应，零漂移**（真机实测） |
-| CPT 自有 `cpt_*` | **14** | 9 张在用 + **5 张迁移遗留的备份/隔离表**（21,961 行） |
+| CPT 自有 `cpt_*` | **9** | 原 14 张 = 9 张在用 + 5 张迁移遗留；**遗留的 5 张（21,962 行）已于 2026-10-24 按 owner 裁决删除并备份** |
 | 反契约表 | **1** | `intraday_seal_snapshot`（CPT 写 → emotion 读） |
 
 ## 2. 跨仓数据流

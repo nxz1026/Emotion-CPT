@@ -75,7 +75,7 @@ CPT 的 web 层直接依赖 **39 个 application 模块 / 8,380 行**，
 
 | 能力 | 内容 | 来源 |
 |---|---|---|
-| **统一数据层** | `~/.dbconfig` 解析（唯一实现）、psycopg 连接参数、52 张表的 manifest、迁移索引、契约门禁 | 两仓的 `_dbconfig.py` + `utils/db.py` + `data/schema.py` + `scripts/migrations/` |
+| **统一数据层** | `~/.dbconfig` 解析（唯一实现）、psycopg 连接参数、47 张表的 manifest、迁移索引、契约门禁 | 两仓的 `_dbconfig.py` + `utils/db.py` + `data/schema.py` + `scripts/migrations/` |
 | **结构计算内核** | 分型 / 笔 / 中枢 / 包含 / 递归 / 趋势 / 背驰 / 结构位 / 买卖点判据 | CPT `cpt/domain/`（18 模块 / 3,581 行 / 零三方依赖） |
 | **快照** | 「K 线 → 结构 → overlays → 结构位 → 结论」的**计算部分** | CPT `cpt/application/a_share_snapshot.py`（1,959 行）的计算部分 |
 | **统一 web 界面层** | 统一入口门面（门户 + 同票并排聚合页 + 两边 API/静态的挂载） | 新增 + 复用 `DSH/portal` |
@@ -115,7 +115,7 @@ emotion_core ───┤
 
 | 模块 | 状态 | 说明 |
 |---|---|---|
-| `emotion_cpt.contracts` | ✅ 可用 | 表归属（52 张）、9 列声明、5 常量 —— **唯一定义处** |
+| `emotion_cpt.contracts` | ✅ 可用 | 表归属（47 张）、9 列声明、6 常量 —— **唯一定义处** |
 | `emotion_cpt.db` | ✅ 可用 | `~/.dbconfig` 解析（唯一实现）+ psycopg 连接参数 + 契约指纹探针 |
 | `emotion_cpt.schema` | ✅ 可用 | manifest 加载与指纹 + 迁移目录 |
 | `emotion_cpt.structure` | 🚧 骨架 | 结构计算内核接口（待自 CPT `cpt/domain/` 逐字搬迁） |

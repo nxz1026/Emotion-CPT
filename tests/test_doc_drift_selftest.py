@@ -26,13 +26,13 @@ from emotion_cpt.cli import check_doc_drift as cdd
 
 #: 一份**干净**的 contract-facts 块（值取自真实代码，测试里不改代码）
 GOOD_FACTS = """<!-- contract-facts
-tables: 52
+tables: 47
 columns: 9
 constants: 6
 shared_tables: 7
 reverse_tables: 1
 owner_emotion: 37
-owner_cpt: 14
+owner_cpt: 9
 owner_reverse: 1
 -->
 """
@@ -72,10 +72,10 @@ def test_facts_block_with_wrong_number_is_flagged() -> None:
 
     with tempfile.TemporaryDirectory() as td:
         root = pathlib.Path(td)
-        bad = GOOD_FACTS.replace("tables: 52", "tables: 51")
+        bad = GOOD_FACTS.replace("tables: 47", "tables: 46")
         _write(root, "CONTRACTS.md", f"# 契约\n\n{bad}\n")
         issues = _run(root)
-        assert any("tables" in i and "51" in i for i in issues), issues
+        assert any("tables" in i and "46" in i for i in issues), issues
 
 
 def test_facts_block_missing_key_is_flagged() -> None:

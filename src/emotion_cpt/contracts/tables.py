@@ -53,14 +53,19 @@ _CPT_ACTIVE_TABLES: Final[tuple[str, ...]] = (
     "cpt_track_snapshot",
 )
 
-# ── CPT 自有（迁移遗留的备份/隔离表 5 张，21,961 行）──────────────────────────
-_CPT_LEGACY_TABLES: Final[tuple[str, ...]] = (
-    "cpt_structure_event_deduped_20261019",
-    "cpt_structure_event_dropped_20261019",
-    "cpt_structure_event_id_backup_20261001",
-    "cpt_structure_event_id_backup_20261019",
-    "cpt_structure_event_quarantine_20261020",
-)
+# ── CPT 自有 ────────────────────────────────────────────────────────────
+# ⚠️ 原先这里还有 5 张**迁移遗留的备份/隔离表**（21,962 行）：
+#   cpt_structure_event_{deduped,dropped}_20261019
+#   cpt_structure_event_id_backup_{20261001,20261019}
+#   cpt_structure_event_quarantine_20261020
+# ⇒ 2026-10-24 按 owner 裁决（Q4）**删除**，已备份到
+#   /home/ubuntu/backups/legacy-tables-20261024-*.{dump,sql,manifest.txt}
+#
+# ⇒ 后果之一：CPT 的 R67 回滚脚本
+#   `scripts/migrations/rollback/2026-10-19_r67_symbol_in_id_rollback.sql`
+#   依赖这些备份表 ⇒ **现在回滚会明确报错**（RAISE EXCEPTION
+#   「缺少备份表 … 无法回滚」）。这是**故意**的：宁可回滚失败，
+#   也不要静默回滚到「少了一截」的状态。
 
 #: CPT 写、emotion 读
 _CPT_WRITTEN: Final[tuple[str, ...]] = ("intraday_seal_snapshot",)
@@ -89,10 +94,6 @@ TABLES: Final[tuple[TableSpec, ...]] = (
             readers=(OWNER_EMOTION,),
         )
         for name in _CPT_ACTIVE_TABLES
-    ),
-    *(
-        TableSpec(name=name, owner=OWNER_CPT, writer=OWNER_CPT, readers=(), legacy=True)
-        for name in _CPT_LEGACY_TABLES
     ),
     *(
         TableSpec(name=name, owner=OWNER_CPT, writer=OWNER_CPT, readers=(OWNER_EMOTION,))

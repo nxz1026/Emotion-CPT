@@ -228,7 +228,8 @@ def build_stock_payload(code: str) -> dict[str, Any]:
         "ok": True,
         "code": norm,
         "generated_at": datetime.now(UTC).isoformat(),
-        "notice": "并排展示，未裁决 —— 差异由 owner 裁定",
+        "notice": "并排展示，不做统一 —— owner 已裁决（Q1=A）："
+        "三套口径各自保留，本页只做映射展示",
         "panels": {
             "cpt": {
                 "available": bool(snap or rec),

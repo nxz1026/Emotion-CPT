@@ -12,15 +12,34 @@ from emotion_cpt.contracts.tables import TABLES, table_of, tables_of
 
 def test_table_count_matches_reality():
     """真值：52 张表 = emotion 37 + CPT 14 + 反契约 1。"""
-    assert len(TABLES) == 52
+    assert len(TABLES) == 47
     assert len(tables_of("emotion-core")) == 37
-    assert len(tables_of("cpt")) == 15  # 14 张 cpt_* + intraday_seal_snapshot
+    assert len(tables_of("cpt")) == 10  # 9 张 cpt_* + intraday_seal_snapshot
 
 
 def test_legacy_tables_are_flagged():
+    """迁移遗留表的**标记机制**仍在，且当前一张都没有。
+
+    2026-10-24 按 owner 裁决（Q4）删掉了最后 5 张 legacy 表
+    （21,962 行，已备份）⇒ 现在应当**一张都没有**。
+
+    但「表可以标为迁移遗留」这个**机制**要留着 ——
+    下次再有迁移遗留表时，能被标出来、能被门禁数出来。
+    """
     legacy = [t for t in TABLES if t.legacy]
-    assert len(legacy) == 5
-    assert all(t.name.startswith("cpt_structure_event_") for t in legacy)
+    assert legacy == [], f"应无 legacy 表，实际有：{[t.name for t in legacy]}"
+
+    # 机制本身仍可用：构造一条带标记的，summary 要能数出来
+    from emotion_cpt.contracts.tables import OWNER_CPT, TableSpec
+    from emotion_cpt.schema.manifest import summary
+
+    marked = TableSpec(
+        name="_probe_legacy_", owner=OWNER_CPT, writer=OWNER_CPT,
+        readers=(), legacy=True,
+    )
+    assert marked.legacy is True
+    # 汇总里也要能数出 legacy（当前为 0，因为已按 Q4 删干净）
+    assert summary()["cpt"]["legacy"] == 0
 
 
 def test_no_duplicate_table_names():

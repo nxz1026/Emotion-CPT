@@ -26,8 +26,8 @@
 
 10 10 * * * /home/ubuntu/DSH/Chan_Pattern_Trader/deploy/cron/watchlist-daily-summary.sh >> /home/ubuntu/logs/watchlist-daily-summary.log 2>&1
 
-*/15 * * * * /home/ubuntu/DSH/Chan_Pattern_Trader/deploy/cron/watchlist-snapshot.sh
+*/15 * * * * /home/ubuntu/DSH/Chan_Pattern_Trader/deploy/cron/watchlist-snapshot.sh >> /home/ubuntu/logs/watchlist-snapshot.log 2>&1
 
-0 */2 * * * /home/ubuntu/DSH/Chan_Pattern_Trader/deploy/cron/watch-period-check.sh
+0 */2 * * * /home/ubuntu/DSH/Chan_Pattern_Trader/deploy/cron/watch-period-check.sh >> /home/ubuntu/logs/watch-period-check.log 2>&1
 0 18 * * * /home/ubuntu/bin/jc-staging-retention.sh --apply >> /home/ubuntu/logs/jc-staging-retention.log 2>&1
 30 18 * * * /home/ubuntu/bin/jc-ops-retention.sh >> /home/ubuntu/logs/ops-retention.log 2>&1

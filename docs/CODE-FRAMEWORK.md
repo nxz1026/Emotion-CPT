@@ -42,7 +42,7 @@ Emotion-CPT/
 │   ├── __init__.py
 │   ├── contracts/                 # ★ 跨项目契约（唯一定义处）
 │   │   ├── __init__.py
-│   │   ├── tables.py              #   52 张表的归属 / 写入方 / 读取方 / 新鲜度
+│   │   ├── tables.py              #   47 张表的归属 / 写入方 / 读取方 / 新鲜度
 │   │   ├── intraday_seal.py       #   9 列声明（带单位与语义）
 │   │   ├── pricing.py             #   6 个契约常量
 │   │   ├── shared_tables.py       #   7 张共享表清单 + 新鲜度判据
@@ -245,7 +245,7 @@ from emotion_cpt.web.aggregate.server import build_stock_payload
 | 层次 | 测什么 | 要点 |
 |---|---|---|
 | 单元 | 契约常量的值与不可变性 | 纯数据，零 I/O，最快 |
-| 契约 | manifest 与契约表清单自洽 | 52 张表全覆盖、无重无漏 |
+| 契约 | manifest 与契约表清单自洽 | 47 张表全覆盖、无重无漏 |
 | 门禁自证 | 注入假数据 ⇒ 门禁必须红 | **每个门禁都要有**（上游 R45 教训） |
 | 探针 | 只读探针的输出格式稳定 | 指纹算法变更 = 破坏性变更 |
 | 集成 | 连真库跑 manifest 比对 | 需 `~/.dbconfig`；CI 用 service 容器 |

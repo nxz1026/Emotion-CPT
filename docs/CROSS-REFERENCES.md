@@ -7,11 +7,11 @@
 > 而不是产出一份指向空气的文档。
 
 
-## 1. 表归属（52 张）
+## 1. 表归属（47 张）
 
 | 归属 | 张数 | 写入方 | 被谁读 |
 |---|---|---|---|
-| **cpt** | 15 | cpt | emotion-core 10 |
+| **cpt** | 10 | cpt | emotion-core 10 |
 | **emotion-core** | 37 | emotion-core | cpt 7、emotion-core 30 |
 
 ### 逐表明细
@@ -25,11 +25,6 @@
 | `cpt_run_metric` | cpt | cpt | emotion-core | — |
 | `cpt_signal_event` | cpt | cpt | emotion-core | — |
 | `cpt_structure_event` | cpt | cpt | emotion-core | — |
-| `cpt_structure_event_deduped_20261019` | cpt | cpt |  | ⚠️ 是 |
-| `cpt_structure_event_dropped_20261019` | cpt | cpt |  | ⚠️ 是 |
-| `cpt_structure_event_id_backup_20261001` | cpt | cpt |  | ⚠️ 是 |
-| `cpt_structure_event_id_backup_20261019` | cpt | cpt |  | ⚠️ 是 |
-| `cpt_structure_event_quarantine_20261020` | cpt | cpt |  | ⚠️ 是 |
 | `cpt_track` | cpt | cpt | emotion-core | — |
 | `cpt_track_snapshot` | cpt | cpt | emotion-core | — |
 | `intraday_seal_snapshot` | cpt | cpt | emotion-core | — |
@@ -95,7 +90,7 @@
 | **A 股价制 / 涨跌停价口径**（P6） | `cpt/domain/__init__.py`（**别名层**：`cpt.domain.price is emotion_cpt.structure.price`） | `src/emotion_core/utils/price.py` + `src/emotion_core/algorithms/intraday.py`（转发层） | ``src/emotion_cpt/structure/price.py`（整数分算法；**Decimal 对照实现同在此文件**，逐分穷举一致）` |
 | **结构计算内核**（P2 搬迁） | `cpt/domain/__init__.py`（**模块别名转发层**：`cpt.domain.X is emotion_cpt.structure.X`） | —（情绪判据留在 emotion-core，不搬） | ``src/emotion_cpt/structure/`（17 模块）` |
 | **数据层**（`~/.dbconfig` 解析 / psycopg 参数） | `cpt/adapters/_dbconfig.py`（旧副本） | `src/emotion_core/utils/db.py`（旧副本） | ``src/emotion_cpt/db/config.py` + `connection.py`` |
-| **表 manifest**（52 张） | — | `src/emotion_core/data/schema.py`（DDL 侧） | ``src/emotion_cpt/contracts/tables.py`` |
+| **表 manifest**（47 张） | — | `src/emotion_core/data/schema.py`（DDL 侧） | ``src/emotion_cpt/contracts/tables.py`` |
 | **unit 真相源**（21 个） | — | — | ``src/emotion_cpt/deploy/systemd/`（随包分发）` |
 | **crontab 真相源**（16 条作业） | — | — | ``src/emotion_cpt/deploy/cron/crontab`（随包分发）` |
 

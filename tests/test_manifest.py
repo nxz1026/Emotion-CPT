@@ -9,11 +9,11 @@ def test_emotion_tables_are_37():
     assert len(tables_of(OWNER_EMOTION)) == 37
 
 
-def test_cpt_side_has_14_cpt_tables_plus_reverse():
+def test_cpt_side_has_9_cpt_tables_plus_reverse():
     cpt = tables_of(OWNER_CPT)
     named = [t for t in cpt if t.name.startswith("cpt_")]
     reverse = [t for t in cpt if t.name == "intraday_seal_snapshot"]
-    assert len(named) == 14
+    assert len(named) == 9
     assert len(reverse) == 1
 
 

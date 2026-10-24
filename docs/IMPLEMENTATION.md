@@ -108,7 +108,7 @@ cd <cpt> && /tmp/ec-compat-venv/bin/python -m pytest tests -q
 ```
 src/emotion_cpt/contracts/
 ├── __init__.py            # 公共 API 汇总
-├── tables.py              # TableManifest：52 张表 → 归属 / 写入方 / 读取方
+├── tables.py              # TableManifest：47 张表 → 归属 / 写入方 / 读取方
 ├── intraday_seal.py       # 9 列的唯一 ColumnSpec 定义
 ├── pricing.py             # 6 个契约常量的唯一定义
 └── shared_tables.py       # 7 张共享表 + 1 张反契约表的清单与新鲜度判据
@@ -157,7 +157,7 @@ class TableSpec:
     readers: tuple[str, ...]
     freshness: str | None = None   # 新鲜度判据（仅共享表有）
 
-TABLES: tuple[TableSpec, ...] = ( ... 52 张 ... )
+TABLES: tuple[TableSpec, ...] = ( ... 47 张 ... )
 ```
 
 ### 3.3 门禁与自证
