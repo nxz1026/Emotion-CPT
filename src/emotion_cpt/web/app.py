@@ -36,6 +36,8 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any
 from urllib.parse import parse_qs, urlsplit
 
+from emotion_cpt.contracts.pricing import PRICE_ROUND_DIGITS
+
 from .aggregate.server import build_stock_payload
 from .facade import (  # noqa: F401  （入口定义在 facade 里）
     DEFAULT_PORT,
@@ -123,6 +125,17 @@ def _ms_to_date(ms: Any) -> str:
     return datetime.fromtimestamp(ms / 1000, tz=UTC).strftime("%Y-%m-%d")
 
 
+def _px(value: Any) -> str:
+    """价格按**契约的取整口径**显示（P3 统一过：PRICE_ROUND_DIGITS）。
+
+    ⚠️ 此前直接显示原值 ⇒ ``8536.18585785`` ⇒ 绕过了口径
+    ⇒ 同一个价在页面/接口/库里长得不一样 ⇒ 对不上账。
+    """
+    if not isinstance(value, (int, float)):
+        return "—"
+    return f"{round(float(value), PRICE_ROUND_DIGITS):.{PRICE_ROUND_DIGITS}f}"
+
+
 def _quote_block(q: dict[str, Any]) -> str:
     """CPT 侧**行情**块（数据早就在取，此前没显示）。"""
     if not q.get("available"):
@@ -134,10 +147,10 @@ def _quote_block(q: dict[str, Any]) -> str:
     return f"""
 <h3>行情</h3>
 <dl class="kv">
-<dt>收盘</dt><dd class="mono">{escape(str(q.get('close')))}
+<dt>收盘</dt><dd class="mono">{escape(_px(q.get('close')))}
  <span style="color:var(--dim)">{escape(chg_txt)}</span></dd>
-<dt>开/高/低</dt><dd class="mono">{escape(str(q.get('open')))}
- / {escape(str(q.get('high')))} / {escape(str(q.get('low')))}</dd>
+<dt>开/高/低</dt><dd class="mono">{escape(_px(q.get('open')))}
+ / {escape(_px(q.get('high')))} / {escape(_px(q.get('low')))}</dd>
 <dt>成交额</dt><dd class="mono">{escape(amt_txt)}</dd>
 <dt>标的</dt><dd>{escape(str(q.get('board_label') or '—'))}
  · 周期 {escape(str(q.get('interval') or '—'))} · {escape(str(q.get('bar_count') or '—'))} 根</dd>
@@ -159,8 +172,8 @@ def _levels_tree_block(t: dict[str, Any]) -> str:
         rows += (
             f"<tr><td class='mono'>{escape(str(lv.get('level')))}</td>"
             f"<td>{escape(str(lv.get('count')))}</td>"
-            f"<td class='mono'>{escape(str(lv.get('high')))}</td>"
-            f"<td class='mono'>{escape(str(lv.get('low')))}</td>"
+            f"<td class='mono'>{escape(_px(lv.get('high')))}</td>"
+            f"<td class='mono'>{escape(_px(lv.get('low')))}</td>"
             f"<td>{escape(kinds)}</td>"
             f"<td class='mono'>{escape(span)}</td></tr>"
         )
