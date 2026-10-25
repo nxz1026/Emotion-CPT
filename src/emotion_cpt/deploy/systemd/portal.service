@@ -1,0 +1,24 @@
+# owner: portal
+[Unit]
+Description=Portal Dashboard (API gateway + today overview)
+After=network.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/home/ubuntu/DSH/portal
+ExecStart=/usr/bin/python3 /home/ubuntu/DSH/portal/app.py
+Restart=on-failure
+RestartSec=5
+Environment=PYTHONUNBUFFERED=1
+
+# Hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=read-only
+ReadWritePaths=/home/ubuntu/DSH/portal /home/ubuntu/logs
+
+[Install]
+WantedBy=multi-user.target

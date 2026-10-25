@@ -1,0 +1,10 @@
+# owner: portal
+[Unit]
+Description=Portal systemd action executor（读 portal 的请求 → 校验 → 执行）
+After=network.target
+
+[Service]
+Type=oneshot
+User=root
+WorkingDirectory=/home/ubuntu/DSH/portal
+ExecStart=/usr/local/bin/portal-systemd-action.sh

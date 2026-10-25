@@ -30,6 +30,12 @@ _MANAGED = (
     "emotion-cpt-",
     "emotion-intraday",
     "emotion-lab",
+    # ⚠️ 2026-10-25 补：这 10 个单元此前**既不在真相源、也没有归属声明**
+    #    ⇒ 其中 portal.service 连镜像里都没有 ⇒ **完全没有备份**。
+    #    ⇒ 纳入真相源后，门禁的双向对账才覆盖它们（原来它们是「看不见的」）。
+    "dsh-",
+    "league-",
+    "portal",
 )
 
 #: unit 里的**归属声明**：``# owner: <名字>``

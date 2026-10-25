@@ -1,0 +1,17 @@
+# owner: league
+[Unit]
+Description=League Web (JC Dashboard)
+After=network.target postgresql.service
+
+[Service]
+Type=simple
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/home/ubuntu/DSH/sports-lottery
+ExecStart=/home/ubuntu/.venvs/league/bin/python -m uvicorn web.api:app --host 127.0.0.1 --port 8077
+EnvironmentFile=/home/ubuntu/DSH/sports-lottery/.env
+Restart=on-failure
+RestartSec=10s
+
+[Install]
+WantedBy=multi-user.target

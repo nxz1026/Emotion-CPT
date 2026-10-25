@@ -1,0 +1,22 @@
+# owner: portal
+[Unit]
+Description=Pull systemd unit backups (portal deploy repo)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/home/ubuntu/DSH/portal
+ExecStart=/bin/bash deploy/systemd-units/sync.sh pull
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=portal-sync-units
+
+# Hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ReadWritePaths=/home/ubuntu/DSH/portal/deploy/systemd-units
+ProtectHome=read-only

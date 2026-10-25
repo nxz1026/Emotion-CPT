@@ -1,0 +1,12 @@
+# owner: portal
+[Unit]
+Description=每 20 秒扫一次 portal 的 systemd 操作请求
+
+[Timer]
+OnBootSec=20s
+OnUnitActiveSec=20s
+AccuracySec=5s
+Unit=portal-systemd-action.service
+
+[Install]
+WantedBy=timers.target

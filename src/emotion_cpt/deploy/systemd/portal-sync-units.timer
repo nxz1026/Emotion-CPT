@@ -1,0 +1,12 @@
+# owner: portal
+[Unit]
+Description=Daily systemd unit backup pull
+
+[Timer]
+OnCalendar=*-*-* 04:00:00
+Persistent=true
+RandomizedDelaySec=1800
+AccuracySec=60
+
+[Install]
+WantedBy=timers.target

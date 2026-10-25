@@ -1,0 +1,23 @@
+# owner: dsh
+[Unit]
+Description=DSH bridge — restricted one-shot executor for the remote LightVela agent
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/home/ubuntu/DSH/dsh-link/bridge
+EnvironmentFile=/home/ubuntu/DSH/dsh-link/bridge/bridge.env
+Environment=PATH=/home/ubuntu/.nvm/versions/node/v22.23.2/bin:/usr/local/bin:/usr/bin:/bin
+ExecStart=/usr/bin/python3 /home/ubuntu/DSH/dsh-link/bridge/bridge.py
+Restart=always
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ReadWritePaths=/home/ubuntu/DSH/dsh-link/bridge /home/ubuntu/.dsh
+
+[Install]
+WantedBy=multi-user.target

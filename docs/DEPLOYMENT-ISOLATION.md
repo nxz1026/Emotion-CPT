@@ -33,8 +33,11 @@ Emotion-CPT 是**真相源的宿主**，但**不是所有作业/单元的 owner*
 | owner | 个数 | 单元 |
 |---|---|---|
 | **cpt** | 5 | `cpt-dashboard-ashare.service`、`cpt-dashboard-ashare.timer`、`cpt-dashboard.service`、`cpt-intraday-collect.service`、`cpt-intraday-collect.timer` |
+| **dsh** | 2 | `dsh-bridge.service`、`dsh-web.service` |
 | **emotion-core** | 15 | `emotion-core-daily.service`、`emotion-core-daily.timer`、`emotion-core-dash.service`、`emotion-core-pool.service`、`emotion-core-pool.timer`、`emotion-core-report.service`、`emotion-core-report.timer`、`emotion-core-strategy.service`、`emotion-core-strategy.timer`、`emotion-core-watchdog.service`、`emotion-core-watchdog.timer`、`emotion-intraday.service`、`emotion-lab-web.service`、`emotion-lab.service`、`emotion-lab.timer` |
 | **emotion-cpt** | 1 | `emotion-cpt-web.service` |
+| **league** | 3 | `league-daily-predict.service`、`league-daily-predict.timer`、`league-web.service` |
+| **portal** | 5 | `portal-sync-units.service`、`portal-sync-units.timer`、`portal-systemd-action.service`、`portal-systemd-action.timer`、`portal.service` |
 
 ### 2.2 crontab 作业
 
@@ -77,7 +80,7 @@ Emotion-CPT 是**真相源的宿主**，但**不是所有作业/单元的 owner*
 > ⚠️ **快照，不是真相源** —— 真值在 `src/emotion_cpt/deploy/` 与 systemctl 里。
 > 重采：`python scripts/gen_deployment_isolation.py --collect`
 
-采集时间（UTC）：**2026-10-24 10:50:32Z**
+采集时间（UTC）：**2026-10-25 14:25:44Z**
 
 ### 5.1 监听端口
 
