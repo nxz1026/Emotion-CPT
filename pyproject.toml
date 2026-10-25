@@ -34,7 +34,17 @@ include = ["emotion_cpt*"]
 [tool.setuptools.package-data]
 # ★ unit 真相源随包分发：任何装了契约包的仓都能读到它
 #   （emotion-core 的架构测试据此做**跨仓**对账，而不是各读各的副本）
-emotion_cpt = ["deploy/systemd/*.service", "deploy/systemd/*.timer", "deploy/systemd/*.md"]
+# ⚠️ 2026-10-25 静态审计：原先只有 deploy/systemd/* ⇒ **crontab 真相源与
+#    nginx 片段都没有进包** ⇒ docstring 宣称「随包分发」是**假的**
+#    ⇒ 上游非 editable 安装 ⇒ `load_crontab()` 直接 FileNotFoundError
+#    ⇒ **上游日报静默失效**（已坏、只是还没被触发）
+emotion_cpt = [
+    "deploy/systemd/*.service",
+    "deploy/systemd/*.timer",
+    "deploy/systemd/*.md",
+    "deploy/cron/crontab",
+    "deploy/nginx/*.conf",
+]
 
 [tool.ruff]
 line-length = 100

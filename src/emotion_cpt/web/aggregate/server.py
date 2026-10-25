@@ -25,6 +25,7 @@
 
 from __future__ import annotations
 
+import time
 from datetime import UTC, datetime
 from typing import Any
 
@@ -268,11 +269,34 @@ def _cpt_levels_tree(snap: dict[str, Any] | None) -> dict[str, Any]:
     return {"available": True, "levels": levels}
 
 
+#: 聚合 payload 的短缓存（秒）。
+#:
+#: 2026-10-24 动态审计实测：单次请求 1.58s（6 个上游串行），
+#: **8 路并发 = 9.42s** ⇒ 上游被打 **48 次** ⇒ 无谓放大 8 倍。
+#: ⇒ 短缓存 ⇒ 并发时只打**一轮**上游。
+#:
+#: ⚠️ 失败结果**不缓存** ⇒ 上游挂了不会把「失败」钉住整个 TTL。
+PAYLOAD_TTL: float = 15.0
+_PAYLOAD_CACHE: dict[str, tuple[float, dict[str, Any]]] = {}
+
+
 def build_stock_payload(code: str) -> dict[str, Any]:
-    """构建同票并排 payload。任一侧不可达都不影响另一侧。"""
+    """构建同票并排 payload。任一侧不可达都不影响另一侧。
+
+    ⚠️ 带**短缓存**（见 :data:`PAYLOAD_TTL`）⇒ 并发时只打一轮上游。
+    """
     norm = norm_code(code)
     if norm is None:
         return {"ok": False, "error": "非法代码（需 6 位数字）"}
+
+    now = time.monotonic()
+    hit = _PAYLOAD_CACHE.get(norm)
+    if hit is not None and now - hit[0] < PAYLOAD_TTL:
+        payload = dict(hit[1])
+        # ⚠️ generated_at 不进缓存 ⇒ 显示的时间永远是「现在」
+        payload["generated_at"] = datetime.now(UTC).isoformat()
+        payload["cached"] = True
+        return payload
 
     snap, snap_err = fetch_cpt_snapshot(norm)
     rec, rec_err = fetch_cpt_recommendation(norm)
@@ -293,7 +317,7 @@ def build_stock_payload(code: str) -> dict[str, Any]:
     holding_action = (holding or {}).get("action")
 
     shown = len(_verdicts(cpt_action, holding_action, strategies))
-    return {
+    payload = {
         "ok": True,
         "code": norm,
         "generated_at": datetime.now(UTC).isoformat(),
@@ -355,6 +379,10 @@ def build_stock_payload(code: str) -> dict[str, Any]:
         "conflicts": _conflicts(cpt_action, holding_action, strategies, levels.get("basis")),
         "shown_calibers": shown,
     }
+    # ⚠️ 失败不缓存（上游挂了不该把「失败」钉住整个 TTL）
+    if payload.get("ok"):
+        _PAYLOAD_CACHE[norm] = (time.monotonic(), dict(payload))
+    return payload
 
 
 __all__ = ("build_stock_payload",)

@@ -46,6 +46,13 @@ from .facade import (  # noqa: F401  （入口定义在 facade 里）
     entry_href,
 )
 
+#: 允许的公网挂载前缀（**白名单**）。
+#:
+#: ⚠️ 2026-10-25 静态审计：``X-Forwarded-Prefix`` 原来**完全信任**客户端
+#: ⇒ ``"><script>…`` ⇒ 反射型 XSS（门面挂在公网 /ecpt/、/dsh/ 下 ⇒ 可达）
+#: ⇒ 只接受白名单里的前缀，其余一律丢弃。
+ALLOWED_PREFIXES: tuple[str, ...] = ("/ecpt/", "/dsh/", "")
+
 _LOG = logging.getLogger("emotion_cpt.web")
 
 _CSS = """
@@ -395,7 +402,14 @@ class FacadeHandler(BaseHTTPRequestHandler):
             return ""
         if not raw.startswith("/"):
             raw = "/" + raw
-        return raw if raw.endswith("/") else raw + "/"
+        raw = raw if raw.endswith("/") else raw + "/"
+        # ⚠️ 2026-10-25 静态审计：原来**完全信任**客户端给的头
+        #    ⇒ `X-Forwarded-Prefix: /"><script>alert(1)</script>` ⇒ 拼进 404 页的
+        #    href 属性 ⇒ **反射型 XSS** ⇒ 门面挂在公网 /ecpt/、/dsh/ 下 ⇒ **可达**
+        # ⇒ 只接受**白名单**里的前缀，其余一律丢弃。
+        if raw not in ALLOWED_PREFIXES:
+            return ""
+        return raw
 
     def do_GET(self) -> None:  # noqa: N802
         prefix = self._prefix()
@@ -421,8 +435,13 @@ class FacadeHandler(BaseHTTPRequestHandler):
         if path == "/api/health":
             self._json(_health())
             return
+        # ⚠️ 一律 escape：前缀来自请求头 ⇒ 不可信
         self._send(
-            _page("404", f"<h1>404</h1><p>没有这个路径。<a href='{prefix or '/'}'>回门户</a></p>"),
+            _page(
+                "404",
+                "<h1>404</h1><p>没有这个路径。"
+                f"<a href='{escape(prefix or '/')}'>回门户</a></p>",
+            ),
             404,
         )
 
