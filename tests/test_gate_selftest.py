@@ -214,3 +214,29 @@ def test_version_single_source():
     except Exception:  # noqa: BLE001
         pytest.skip("本仓未以包形式安装")
     assert emotion_cpt.__version__ == installed == m.group(1)
+
+
+def test_no_stale_egg_info_shadowing_metadata():
+    """★ 源码树里**不许**留 ``*.egg-info``（构建产物）。
+
+    ⚠️ 2026-10-25（真机）：``src/emotion_cpt.egg-info/`` 是一份**陈旧的**元数据
+    （PKG-INFO 还写着 0.8.3，mtime 10-24）。
+    editable 安装的 ``.pth`` 把 ``Emotion-CPT/src`` 加进了 ``sys.path``
+    ⇒ ``importlib.metadata.version("emotion-cpt")`` **优先命中它**
+    ⇒ 明明 venv 里的 dist-info 是 0.8.4，读出来却是 0.8.3
+    ⇒ ``test_version_single_source`` 变红 ⇒ **真机上 CI 一直是红的**。
+
+    ⇒ 这一条比"版本号对不对"更要紧：**它会遮蔽任何版本号**。
+    ⇒ 根上：``emotion_cpt.__version__`` 现在**优先读 pyproject**（源码树里），
+    所以即便有陈旧产物也影响不到版本号；但它仍会遮蔽别人读元数据的地方
+    ⇒ 直接删掉，并守住它不许再出现。
+    """
+    src = Path(__file__).resolve().parents[1] / "src"
+    stale = sorted(p.name for p in src.glob("*.egg-info"))
+    assert not stale, (
+        f"★ src/ 下有陈旧的 egg-info（构建产物）：{stale}\n"
+        "  ⇒ editable 安装把 src/ 放进 sys.path ⇒ importlib.metadata 会**优先命中它**\n"
+        "  ⇒ 遮蔽 venv 里真正的 dist-info ⇒ 版本号读到旧值。\n"
+        "  ⇒ 修法：删掉它（venv 里有真正的 dist-info，不需要它）。"
+    )
+
