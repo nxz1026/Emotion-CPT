@@ -29,6 +29,15 @@ jobs:
       - name: Lint
         run: |
           python -m ruff check src tests scripts
+      - name: czsc 对账门禁（判据内核 vs 参照侧）
+        # ★ 尺子：没有它，结构语义改动就是**盲改**（改完只能靠"图看着对"判断）。
+        # 输出三个数字：笔数差 / 中枢数差 / 力度口径差；超预算就红。
+        # ⚠️ czsc 只是**对账工具**，不是本仓的运行时依赖 ⇒ 只装原生扩展（--no-deps）
+        #    （Rust 扩展零 Python 三方依赖；脚本直接加载 czsc/_native.abi3.so）
+        # ⚠️ pandas 还是要的 —— 读 czsc 笔的端点时间（.dt 返回 pandas Timestamp）
+        run: |
+          python -m pip install --no-deps "czsc==1.0.1" pandas
+          python scripts/parity_czsc.py
       - name: Contract self-test (门禁必须能报错)
         # 纪律：自制的验证工具第一版基本都错 —— 必须确认门禁还能报
         run: python -m pytest tests/test_gate_selftest.py -q

@@ -89,6 +89,68 @@ DEFAULT_MIN_BI_LEN_BY_INTERVAL: Final[tuple[tuple[str, int], ...]] = (
 )
 
 
+#: ★ 配置项的**接线状态登记**（2026-10-25 静态审计 #6/#7/#10 + 复核追加两条）
+#:
+#: ## 为什么要有这两张表
+#:
+#: 静态审计查出：``RulesConfig`` 里好几项**能配，但内核从不读它们**
+#: ⇒ 改了配置行为不变 ⇒ **假绿**（「以为切了口径，其实没切」）。
+#:
+#: 复核时又发现**审计自己漏了两条**（``contain_direction`` / ``zs_level_count``），
+#: 而**接线不在本包、而在调用方**（CPT 的 ``reference_pipeline.py`` /
+#: ``multi_level.py`` 才会读它们）⇒ 只扫本包会误判。
+#:
+#: ⇒ 处置：**每个字段都必须被明确登记**，否则门禁报红
+#: （门禁见 ``tests/test_structure_config.py::test_config_field_is_registered``）。
+#: ⇒ 这样「加了个新配置项、忘了接线」当场现形。
+#:
+#: ## 两张表的含义
+#:
+#: - :data:`UNIMPLEMENTED_FIELDS` —— **真·没有落地点**：
+#:   本包**和**上游（CPT / emotion-core）**都没有读取点**
+#:   ⇒ 配了它**行为完全不变** ⇒ 已收敛为「配错即报错」或明确标注未实现。
+#: - :data:`WIRED_BY_UPSTREAM` —— **本包不读、上游在读**：
+#:   语义是**生效的**（CPT 把它们传进内核）⇒ 不属于假绿，
+#:   但**改它们时要知道改的是上游那一侧**。
+#:
+#: ⚠️ 这两张表**只允许变短**（实现了的挪出去）⇒ 它们是「欠账清单」。
+
+#: **真·没有落地点**（本包与上游都没有读取点 ⇒ 配了也没用）。
+UNIMPLEMENTED_FIELDS: frozenset[str] = frozenset(
+    {
+        # 审计 #7：内核的背驰比较用的是**笔的力度**（power_price / power_volume /
+        #         length），**不是** MACD 柱面积 ⇒ 这个字段名在说谎。
+        "divergence_compare",
+        # 审计 #10：高级别递归链上的「≥ N 个结构元素」门槛只做值域校验、**不施加**；
+        #          且它该作用在 ``recursion.map_trend_types`` 那一层，
+        #          **不是** ``build_bis``（后者是最底层，拿不到「结构元素」）。
+        "min_elements_for_higher_bi",
+        # ★ 复核追加（审计漏了）：``merge_contained_bars(direction=...)`` 的
+        #   默认值就是 "forward"，而**没有任何调用方传 config.contain_direction**
+        #   ⇒ 配成 "backward" 也不会生效 ⇒ 同样是假绿。
+        "contain_direction",
+        # ★ 复核追加（审计漏了）：中枢级别数没有任何读取点 ⇒ 配它没用。
+        "zs_level_count",
+    }
+)
+
+#: **本包不读、但上游（CPT / emotion-core）在读** ⇒ 语义生效，不是假绿。
+WIRED_BY_UPSTREAM: frozenset[str] = frozenset(
+    {
+        "fx_qy_middle",
+        "fx_qj_ck",
+        "bi_type_new",
+        "zs_wzgx",
+        "min_bi_len",
+        "min_bi_len_by_interval",
+        "macd_fast",
+        "macd_slow",
+        "macd_signal",
+        "levels",
+        "config_version",
+    }
+)
+
 @dataclass(frozen=True, slots=True)
 class RulesConfig:
     """可序列化的规则口径配置。
@@ -109,6 +171,11 @@ class RulesConfig:
         zs_wzgx: 中枢位置关系，``"zgd"``=高点比 zg、低点比 zd（§9.5 冻结）。
         zs_level_count: 中枢级别数。
         min_elements_for_higher_bi: 高级别笔最少结构元素（§9.7 冻结，工程参数）。
+            ⚠️ **2026-10-25 审计 #10：这个字段目前没有落地点** ——
+            门槛只在 ``recursion.map_trend_types`` 做了值域校验、**不施加**；
+            且它该作用在**高级别递归链**那一层（结构元素计数），
+            **不是** ``build_bis``（后者是最底层，拿不到「结构元素」）
+            ⇒ 已登记在 :data:`UNIMPLEMENTED_FIELDS` 里。
             **量纲＝低级别结构元素数**，与 ``min_bi_len`` 不同，不可混用。
         min_bi_len: 底层笔最少跨度，**量纲＝去包含后的 K 线根数**（§9.8）。
 
@@ -135,6 +202,10 @@ class RulesConfig:
         macd_slow: MACD 慢线周期。
         macd_signal: MACD 信号线周期。
         divergence_compare: 背驰比较方式，``"area"``=MACD 柱面积（§9.6 冻结）。
+            ⚠️ **2026-10-25 审计 #7：这个字段目前没有落地点** ——
+            内核的背驰比较用的是**笔的力度**（power_price / power_volume / length），
+            **不是** MACD 柱面积 ⇒ 改它**行为不变** ⇒ 已登记在
+            :data:`UNIMPLEMENTED_FIELDS` 里（门禁守着，别再假装它能切口径）。
         levels: 级别链。**元素的单位按市场而异**：加密侧是分钟数（``5`` = 5 分钟
             级别）；A 股数据源是**日线**（``daily_bar``），``5`` 是「日线级别」，
             **不是** 5 分钟。域内计算只关心 level 的相对大小、与单位无关，但
@@ -259,9 +330,17 @@ class RulesConfig:
             )
         if self.min_bi_len < 1:
             raise ValueError(f"min_bi_len 必须 >= 1, 实测 {self.min_bi_len}")
-        if self.zs_wzgx not in {"zgd", "zdg", "ggd", "ddd"}:
-            # 实际可用档位由 rules.md §9.5 决定,此处仅做白名单最小校验
-            raise ValueError(f"zs_wzgx 必须是已知档位之一, 实测 {self.zs_wzgx!r}")
+        if self.zs_wzgx != "zgd":
+            # ⚠️ 2026-10-25 修（审计 #6）：原来白名单是 {"zgd","zdg","ggd","ddd"}，
+            #    但内核**只实现了 zgd**（zhongshu._covers / trend_type._overlaps /
+            #    trend_type._separation 都硬编码 zgd 语义）
+            #    ⇒ 配成 zdg/ggd/ddd **行为完全不变** ⇒ **假绿**
+            #    （文档说"可以配四档"，实际只有一档真的生效）
+            # ⇒ 现在只接受 zgd ⇒ 配错的**当场报错**，不再静默按 zgd 跑。
+            raise ValueError(
+                f"zs_wzgx 只实现了 'zgd'（§9.5），实测 {self.zs_wzgx!r}"
+                " ⇒ 其它档位内核没有实现，配了也不会生效（原来静默按 zgd 跑）"
+            )
 
     def __str__(self) -> str:
         """可读单行形式：``RulesConfig(v0): field=value ...``。

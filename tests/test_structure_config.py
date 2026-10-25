@@ -62,3 +62,85 @@ def test_direct_construction_still_rejects_bad_version() -> None:
     """直接构造时版本不符仍报错（``__post_init__`` 那条路没被改）。"""
     with pytest.raises(ValueError, match="不支持的 config_version"):
         RulesConfig(config_version="v0")
+
+
+# ────────────────────── 配置项的接线状态门禁 ──────────────────────
+
+
+def _config_field_read_points(field: str) -> list[str]:
+    """本仓（**除 config.py 自身**）里读这个字段的地方。
+
+    ⚠️ config.py 自己的 ``if self.xxx < 1`` 是**值域校验**，不是「接线」
+    ⇒ 排除它，否则每个字段都会被自己判成「已接线」。
+
+    用 AST 找 ``ast.Attribute``（形如 ``cfg.xxx`` / ``self.xxx``）⇒
+    **docstring 与注释里的提及不算**（那正是「文档说有、代码没有」的来源）。
+    """
+    import ast
+    import pathlib
+
+    from emotion_cpt.structure import config as cfg_mod
+
+    pkg = pathlib.Path(cfg_mod.__file__).resolve().parent
+    hits: list[str] = []
+    for path in sorted(pkg.rglob("*.py")):
+        if path.name == "config.py":
+            continue
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Attribute) and node.attr == field:
+                hits.append(f"{path.name}:{node.lineno}")
+                break
+    return hits
+
+
+def test_config_field_is_registered():
+    """★ 每个 ``RulesConfig`` 字段都必须**明确登记**它的接线状态。
+
+    背景（2026-10-25 静态审计 #6/#7/#10 + 复核）：
+    ``RulesConfig`` 里好几项**能配但内核从不读** ⇒ 改了行为不变 ⇒ **假绿**。
+    而接线又**不在本包**（在 CPT 的调用方）⇒ 只扫本包会误判。
+
+    ⇒ 处置：每个字段必须落在**恰好一张**表里：
+      - :data:`UNIMPLEMENTED_FIELDS` —— 真·没有落地点（配了也没用）
+      - :data:`WIRED_BY_UPSTREAM` —— 本包不读、**上游在读**（语义生效）
+
+    ⇒ **新加一个配置项却忘了登记 ⇒ 这里报红**（而不是等到有人以为它能配）。
+    """
+    import dataclasses
+
+    from emotion_cpt.structure.config import (
+        UNIMPLEMENTED_FIELDS,
+        WIRED_BY_UPSTREAM,
+        RulesConfig,
+    )
+
+    fields = [f.name for f in dataclasses.fields(RulesConfig)]
+    registered = UNIMPLEMENTED_FIELDS | WIRED_BY_UPSTREAM
+    both = UNIMPLEMENTED_FIELDS & WIRED_BY_UPSTREAM
+    assert not both, f"同一个字段不能同时登记在两张表里：{sorted(both)}"
+
+    missing = [name for name in fields if name not in registered]
+    assert not missing, (
+        f"这些配置字段**没有登记**接线状态：{missing}\n"
+        "  ⇒ 新加字段忘了接线？它现在能配但没人读 ⇒ **假绿**。\n"
+        "  ⇒ 请登记到 UNIMPLEMENTED_FIELDS（真没落地点）或 WIRED_BY_UPSTREAM（上游在读）。"
+    )
+
+    stale = [name for name in registered if name not in fields]
+    assert not stale, f"登记表里有**已经不存在的字段**（该删了）：{sorted(stale)}"
+
+
+def test_unimplemented_fields_really_have_no_read_point():
+    """★ 登记为「没有落地点」的字段，**必须真的没有读取点**。
+
+    ——防「登记了但其实已经实现了」⇒ 那样这张表就变成了永久的免死金牌。
+    """
+    from emotion_cpt.structure.config import UNIMPLEMENTED_FIELDS
+
+    for name in sorted(UNIMPLEMENTED_FIELDS):
+        hits = _config_field_read_points(name)
+        assert not hits, (
+            f"{name} 被登记为「没有落地点」，但本仓这里读它：{hits}\n"
+            "  ⇒ 它其实已经接线了 ⇒ 请把它从 UNIMPLEMENTED_FIELDS 挪到 WIRED_BY_UPSTREAM。"
+        )

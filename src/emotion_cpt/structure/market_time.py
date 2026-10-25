@@ -70,7 +70,20 @@ def seconds_to_close(now: dt.datetime | None = None) -> int:
         时间**（naive ``datetime`` 会被 ``astimezone`` 当成本地时区解释，正是本
         模块要消灭的那件事），要固定时刻请用
         ``dt.datetime(2026, 10, 8, 14, 30, tzinfo=MARKET_TZ)``。
+
+    ⚠️ 2026-10-25 修（审计 #14）：原来 naive ``datetime`` 只是**写在 docstring 里**
+    的「不要」，代码照收不误 ⇒ ``astimezone`` 按**宿主本地时区**解释
+    ⇒ 生产机（``Etc/UTC``）上 14:30 会被当成 UTC 14:30 = 北京 22:30 ⇒ 返回 0（已收盘）
+    ⇒ **静默算错**。现在 naive 直接报错：
+    宁可喊「你没给时区」，也不要**猜**一个时区给用户。
     """
+    if now is not None and now.tzinfo is None:
+        raise ValueError(
+            "seconds_to_close(now=...) 需要**带时区**的 datetime；"
+            f"实测 {now!r} 是 naive（无 tzinfo）"
+            " ⇒ astimezone 会按**宿主本地时区**解释 ⇒ 静默算错。"
+            "请用 dt.datetime(..., tzinfo=MARKET_TZ) 或直接省略 now。"
+        )
     moment = market_now() if now is None else now.astimezone(MARKET_TZ)
     close = moment.replace(
         hour=MARKET_CLOSE.hour,
