@@ -86,8 +86,15 @@ def board_of(code: str, *, name: str | None = None) -> str:
     """板块名（判据用枚举）：``main`` / ``growth`` / ``bse`` / ``st_main`` / ``st_growth``。
 
     ⛔ 顺序即口径：growth → bse → st_main → main。
+
+    ⚠️ **akshare symbol 前缀 ``bj`` 先剥掉**（2026-10-25 修）：``bj920296``
+    是北交所票，但此前这里不认 ``bj`` ⇒ 落到 ``main``（10%）⇒ 与
+    :func:`board_pct_milli`（认 ``bj`` ⇒ 30%）**给出相反答案** ⇒
+    「已封板」被误判成「未到板」（涨停价差 2.29 元）。两个 API 现在同源。
     """
     code = code.strip()
+    if code.startswith("bj"):
+        code = code[2:]
     st = is_st_name(name)
     if code.startswith(_GROWTH_PREFIXES):
         return "st_growth" if st else "growth"
@@ -122,7 +129,11 @@ def board_pct_milli(code: str) -> int:
     :func:`board_pct_limit`（要名字）再转千分比。
 
     北交所代码格式：纯代码 4/8/920 开头，或 akshare symbol 前缀 ``bj``。
+
+    ⚠️ **空白也要剥**（2026-10-25 修）：此前本函数不 ``strip()`` 而
+    :func:`board_of` 剥 ⇒ ``" 300750"`` 在两条路径上得到不同板块。
     """
+    code = code.strip()
     if code.startswith("bj"):
         return _PCT_MILLI_BSE
     if code.startswith(("30", "68")):
@@ -161,17 +172,46 @@ def limit_down_price_cents(
     return (pre_close_cents * (1000 - pct) + 500) // 1000
 
 
-def is_limit_up(close_cents: int, pre_close_cents: int, code: str) -> bool:
+def is_limit_up(
+    close_cents: int,
+    pre_close_cents: int,
+    code: str,
+    *,
+    name: str | None = None,
+    pct_milli: int | None = None,
+) -> bool:
     """是否涨停（收盘 == 涨停价）。
 
     ⚠️ 用**精确等于**（``c_c == up_c``），不是 ``>=`` —— 逐字沿用 lkl 语义。
+
+    :param name: 判断主板 ST **必须**传它（代码里分不出 ST）。
+        不传按「非 ST」算 —— 与 :func:`board_pct_limit` 同一条「有意的乐观」
+        （宁可少报不可错报）。
+    :param pct_milli: 覆盖按代码推断的涨跌幅千分比（**只有 ST 需要**）。
+
+    ⚠️ **2026-10-25 修**：此前本函数**既不收 ``name`` 也不收 ``pct_milli``**
+    ⇒ 主板 ST 永远按 10% 判 ⇒ ST 股 5% 封板判 ``False``（漏报），
+    而 API 面**不存在**任何正确用法（:func:`limit_up_price_cents` 明明支持
+    ``pct_milli`` 覆盖）。现在两个入口都通了。
     """
-    return close_cents == limit_up_price_cents(pre_close_cents, code)
+    pct = pct_milli if pct_milli is not None else pct_milli_for(code, name=name)
+    return close_cents == limit_up_price_cents(pre_close_cents, code, pct_milli=pct)
 
 
-def is_limit_down(close_cents: int, pre_close_cents: int, code: str) -> bool:
-    """是否跌停（收盘 == 跌停价）。同样是精确等于。"""
-    return close_cents == limit_down_price_cents(pre_close_cents, code)
+def is_limit_down(
+    close_cents: int,
+    pre_close_cents: int,
+    code: str,
+    *,
+    name: str | None = None,
+    pct_milli: int | None = None,
+) -> bool:
+    """是否跌停（收盘 == 跌停价）。同样是精确等于。
+
+    ``name`` / ``pct_milli`` 的语义与 :func:`is_limit_up` 相同。
+    """
+    pct = pct_milli if pct_milli is not None else pct_milli_for(code, name=name)
+    return close_cents == limit_down_price_cents(pre_close_cents, code, pct_milli=pct)
 
 
 def limit_up_price(code: str, pre_close: float, *, name: str | None = None) -> float | None:

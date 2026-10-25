@@ -41,6 +41,12 @@
 :func:`cpt.application.run_metric` 里被比对）。本模块的
 ``config_version`` 是**回放入口的单点守卫**，不是全局版本闸门。
 改参数时**必须手工**同步 ``config_version``，否则回放静默用旧口径。
+
+**2026-10-25：这个守卫此前是空的，现已落地。** 原先
+:meth:`from_dict` 会 ``pop`` 掉传入的 ``config_version`` ⇒ 异版本配置
+被**静默**当成当前版本接受 ⇒ 上面的「单点守卫」形同虚设（文档两处声称
+存在、代码里没有）。现在 ``from_dict`` 对不匹配的 ``config_version``
+**直接抛 ``ValueError``**，守卫才真的成立。
 """
 
 # >>> 已迁至 emotion_cpt.structure.config（2026-10-23）
@@ -199,18 +205,37 @@ class RulesConfig:
 
         - 未知键被忽略，向前兼容（旧数据落入新版配置时丢弃多余字段）。
         - ``levels`` 归一为 ``tuple[int, ...]``。
-        - ``config_version`` 不接受数据覆盖——版本号只跟随代码（防止 fixture
-          写 ``"config_version": "v99"`` 绕过 v0 冻结契约）。
+        - ``config_version`` **异版本直接拒收**（2026-10-25 修）：没带就跟随
+          代码，带了且与 :data:`SCHEMA_VERSION` 不同就抛 ``ValueError``。
         - 值域校验由 ``__post_init__`` 兜底。
+
+        ⚠️ **为什么原来要改**：原实现是 ``kwargs.pop("config_version", None)``
+        —— 把传入的版本号**静默丢掉**。于是 ``from_dict`` 永远构造出「当前版本」
+        的配置：本模块头里承诺的「回放 fixture 拒收异版本配置 /
+        ``config_version`` 是回放入口的单点守卫」**根本不存在**
+        （``cpt.application.dashboard_reproducibility`` 的注释也写着
+        「``from_dict`` 会拒绝不匹配的 ``config_version``」
+        —— 两处文档都声称存在、代码里没有）。
+
+        危害：``SCHEMA_VERSION`` 从 ``v0`` 升到 ``v1`` 的**唯一目的**就是
+        挡住「拿 v0 的 fixture 跑 v1 的代码还显示正常」，而这个机制是空的 ⇒
+        改了参数、版本号还是 v0 的旧 fixture 照样通过校验被回放，无任何提示。
         """
         if not isinstance(data, dict):
             raise TypeError(f"RulesConfig.from_dict 需要 dict, 收到 {type(data).__name__}")
+        version = data.get("config_version")
+        if version is not None and version != SCHEMA_VERSION:
+            raise ValueError(
+                f"拒收异版本配置: config_version={version!r}，当前代码是 {SCHEMA_VERSION!r}。"
+                "v0 的 fixture 在 v1 代码上**不可比**（跨度门槛生效后全部结构都变了）"
+                "—— 请用当前口径重建 fixture，别拿旧 fixture 硬回放。"
+            )
         levels = data.get("levels", cls.__dataclass_fields__["levels"].default)
         if not isinstance(levels, (list, tuple)):
             raise TypeError(f"levels 必须是 list/tuple, 收到 {type(levels).__name__}")
         kwargs = {k: v for k, v in data.items() if k in cls.__dataclass_fields__}
         kwargs["levels"] = tuple(int(x) for x in levels)
-        kwargs.pop("config_version", None)  # 版本号只跟随代码
+        kwargs.pop("config_version", None)  # 版本号只跟随代码（异版本已在上面积拦掉）
         return cls(**kwargs)
 
     def __post_init__(self) -> None:

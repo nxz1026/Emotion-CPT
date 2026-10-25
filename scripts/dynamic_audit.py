@@ -12,10 +12,8 @@
 
 from __future__ import annotations
 
-import json
 import os
 import pathlib
-import statistics
 import subprocess
 import time
 import urllib.error
@@ -69,15 +67,35 @@ def proc_count(unit: str) -> int:
         return -1
 
 
+def _dbconfig_value(key: str) -> str:
+    """从 ``~/.dbconfig`` 取一个键的值（形如 ``$DB_PW=...``）。"""
+    text = pathlib.Path.home().joinpath(".dbconfig").read_text()
+    return text.split(f"{key}=")[1].splitlines()[0]
+
+
 def db_conns() -> int:
     try:
-        pw = pathlib.Path.home().joinpath(".dbconfig").read_text().split("$DB_PW=")[1].splitlines()[0]
-        host = pathlib.Path.home().joinpath(".dbconfig").read_text().split("$RDSHOST=")[1].splitlines()[0]
-        name = pathlib.Path.home().joinpath(".dbconfig").read_text().split("$DBNAME=")[1].splitlines()[0]
+        pw = _dbconfig_value("$DB_PW")
+        host = _dbconfig_value("$RDSHOST")
+        name = _dbconfig_value("$DBNAME")
         env = {**os.environ, "PGPASSWORD": pw}
         out = subprocess.run(
-            ["psql", "-h", host, "-U", "postgres", "-d", name, "-tAc", "SELECT count(*) FROM pg_stat_activity"],
-            capture_output=True, text=True, timeout=20, check=False, env=env,
+            [
+                "psql",
+                "-h",
+                host,
+                "-U",
+                "postgres",
+                "-d",
+                name,
+                "-tAc",
+                "SELECT count(*) FROM pg_stat_activity",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=20,
+            check=False,
+            env=env,
         ).stdout.strip()
         return int(out) if out.isdigit() else -1
     except Exception:  # noqa: BLE001
@@ -144,7 +162,7 @@ def main() -> int:
         results = []
         lock = threading.Lock()
 
-        def worker():
+        def worker(url=url, lock=lock, results=results):
             c, dt, body = timed(url, timeout=90)
             with lock:
                 results.append((c, dt, body))
@@ -158,8 +176,11 @@ def main() -> int:
         total = time.time() - t0
         codes = [r[0] for r in results]
         bodies = {r[2][:200] for r in results}
-        print(f"  {name:26} 总耗时={total:5.2f}s 状态码={set(codes)}  "
-              f"最慢={max(r[1] for r in results):5.2f}s 响应一致={'是' if len(bodies) == 1 else '否'}")
+        same = "是" if len(bodies) == 1 else "否"
+        print(
+            f"  {name:26} 总耗时={total:5.2f}s 状态码={set(codes)}  "
+            f"最慢={max(r[1] for r in results):5.2f}s 响应一致={same}"
+        )
 
     print()
     print("=" * 70)

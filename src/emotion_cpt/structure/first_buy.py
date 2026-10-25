@@ -37,10 +37,10 @@
 
 from __future__ import annotations
 
-import math
 from collections.abc import Sequence
 from typing import Final
 
+from emotion_cpt.contracts.pricing import round_to_2_digit
 from emotion_cpt.structure.models import Bi
 
 __all__ = [
@@ -53,17 +53,6 @@ __all__ = [
 #: 笔方向。
 _UP: Final[int] = 1
 _DOWN: Final[int] = -1
-
-
-def round_to_2_digit(value: float) -> float:
-    """保留 2 位小数，半数**远离零**（对齐 Rust ``f64::round``）。
-
-    Python 内建 ``round`` 对 .5 走银行家舍入，与 Rust 不同；这里显式实现，
-    避免 ``power_price`` 在 .005 边界上与 czsc 分叉。
-    """
-    scaled = value * 100.0
-    rounded = math.floor(scaled + 0.5) if scaled >= 0 else math.ceil(scaled - 0.5)
-    return rounded / 100.0
 
 
 def mean(values: Sequence[float]) -> float:

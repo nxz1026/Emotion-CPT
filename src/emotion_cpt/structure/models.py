@@ -161,12 +161,22 @@ class Bi:
     后三个字段是**力度度量**（一买/一卖背驰比较用，见 :mod:`cpt.domain.first_buy`），
     默认 ``0`` 表示"未填充"：
 
-    - ``power_price``：两端分型价格之差的绝对值，保留 2 位小数；
+    - ``power_price``：笔的**振幅**（``high - low``），保留 2 位小数；
     - ``power_volume``：笔内**中间** K 线的成交量之和（不含两端）；
     - ``length``：笔的**去包含后** K 线根数。
 
     口径与 czsc ``BI.get_power_price`` / ``get_power_volume`` / ``get_length``
-    对齐（``crates/czsc-core/src/objects/bi.rs``）。
+    对齐（``crates/czsc-core/src/objects/bi.rs``）—— 2026-10-25 用 czsc 1.0.1
+    **原生包**在随机行情上逐笔对账实测：``power_price == round(high - low, 2)``
+    **零例外**。
+
+    ⚠️ ``power_price`` 是**振幅**，**不是**「两端分型价格之差」：底分型的高点是
+    那根 K 线的高点、不是底价 ⇒ 按两端 ``high`` 相减会把振幅算小 ⇒
+    背驰比较整体偏移（会错判背驰）。
+
+    ⚠️ **三件要么齐备、要么全为 0**。半填（``length`` 有值而 ``power_volume``
+    是 0）会被 ``first_buy._require_power_metrics`` 放过去 ⇒ 背驰判定静默失真
+    （量能恒为 0 ⇒「量能变小」恒成立 ⇒ 恒判背驰）。
     """
 
     level: int
