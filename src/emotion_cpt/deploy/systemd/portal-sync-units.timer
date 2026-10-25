@@ -3,7 +3,11 @@
 Description=Daily systemd unit backup pull
 
 [Timer]
-OnCalendar=*-*-* 04:00:00
+OnCalendar=*-*-* 04:00:00 UTC
+# ⚠️ 2026-10-25 修：原来**没写时区** ⇒ 生产机是 Etc/UTC ⇒ 实际就是 04:00 UTC
+#    （排期没变）⇒ 但真相源里「没写时区」⇒ 换台非 UTC 的机器就变成 04:00 本地时间
+#    ⇒ emotion-core 的架构测试（OnCalendar 必须自带显式时区）因此报红
+#    ⇒ 这条 timer 2026-10-25 才纳入 Emotion-CPT 真相源 ⇒ 此前这个坑一直藏着。
 Persistent=true
 RandomizedDelaySec=1800
 AccuracySec=60
