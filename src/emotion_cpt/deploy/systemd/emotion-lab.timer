@@ -3,7 +3,15 @@
 Description=Emotion Core Lab daily (after mainline daily)
 
 [Timer]
-OnCalendar=Mon-Fri 17:45:00 Asia/Shanghai
+# ⚠️ 2026-10-25 改（真机核实「这么多任务在用没有」）：**每天 → 每周一**
+#    理由：这是**研究线**，不是生产线 ——
+#      · 产出 lab.lab_variant 17 个（**1 active / 16 draft**）
+#      · lab.lab_outcome 6064 行，**每天重算同一批**
+#        （max(confirm_date) 停在 2026-10-20 ⇒ 结论一天没变）
+#      · 读者只有它自己（lab/search、lab/score、lab/web 面板）
+#    ⇒ 每天跑是**纯冗余**（占 CPU、每天写一遍一样的数据）。
+#    ⇒ 改成每周一一次；**要恢复随时改回这一行**。
+OnCalendar=Mon 17:45:00 Asia/Shanghai
 Persistent=true
 Unit=emotion-lab.service
 
