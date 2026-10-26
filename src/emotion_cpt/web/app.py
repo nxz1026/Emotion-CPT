@@ -2,17 +2,27 @@
 
 ## 它做什么
 
-一个 origin 下的四个入口：
+挂在 ``/ecpt/`` 下的四个入口：
 
 ============================  ==========================================
 路径                          内容
 ============================  ==========================================
-``/``                         **统一门户**：并列各入口
-``/aggregate``                同票并排（带代码输入框）
-``/aggregate/stock/{code}``   同票并排
-``/api/aggregate/stock/{code}``  同票并排的 JSON
-``/api/health``               自己 + 三个上游的可达性
+``/ecpt/``                    **统一入口页**：并列各子入口（门户主页同款样式）
+``/ecpt/aggregate``           同票并排（带代码输入框）
+``/ecpt/aggregate/stock/{code}``  同票并排
+``/ecpt/api/aggregate/stock/{code}``  同票并排的 JSON
+``/ecpt/api/health``          自己 + 三个上游的可达性
 ============================  ==========================================
+
+## 样式：与门户主页**同一套**（2026-10-26）
+
+页面骨架（顶栏、卡片、按钮、配色、深浅色）**全部**来自门户主页的
+``/assets/portal.css``（门户仓是站点视觉的**真相源**）⇒ 两个页面长得一样。
+本文件只保留「同票并排」页**专有**的组件样式（表格 / 键值表 / 徽标 / 表单）。
+
+⚠️ 门户的 CSS 是**运行时**从门户服务取的（``/assets/portal.css``）
+⇒ 直连 8092（本机调试）时取不到 ⇒ 页面会**没有样式**（功能正常）。
+生产入口只有 ``/ecpt/``（走 nginx ⇒ 取得到）。
 
 ## 它不做什么（边界）
 
@@ -55,72 +65,154 @@ ALLOWED_PREFIXES: tuple[str, ...] = ("/ecpt/", "/dsh/", "")
 
 _LOG = logging.getLogger("emotion_cpt.web")
 
+#: 门户主页样式表的**公开地址**（门户仓是站点视觉的真相源）。
+#:
+#: ⚠️ 为什么是**绝对路径**而不是带前缀的相对路径：
+#:    门面挂在 ``/ecpt/`` 下 ⇒ ``/ecpt/assets/portal.css`` 会被 nginx
+#:    路由回**门面自己**（location /ecpt/）⇒ 404。
+#:    ⇒ 只能指向 origin 根 ⇒ nginx 的 ``location /`` ⇒ 门户 ⇒ 取得到。
+#:    （直连 8092 调试时没有 nginx ⇒ 取不到 ⇒ 页面无样式，但功能正常。）
+PORTAL_STYLESHEET = "/assets/portal.css"
+
+#: 门面**专有**的组件样式（只覆盖「同票并排」页用到的那几样）。
+#:
+#: ⚠️ 页面骨架（顶栏 / 卡片 / 按钮 / 配色 / 深浅色）**一律**由门户的
+#:    portal.css 提供 ⇒ 不要在这里重新定义 .card / .btn / .topbar / :root
+#:    ⇒ 否则两页会**长得不一样**（这正是 2026-10-26 要修的那件事）。
+#:    ⇒ 这里所有类名都带 ``ecpt-`` 前缀，避免和门户的类名打架。
 _CSS = """
-:root{--bg:#0f1115;--card:#171a21;--line:#262b36;--fg:#e6e9ef;--dim:#8b93a3;
---up:#3fb950;--down:#f85149;--flat:#d29922;--none:#6e7681;--accent:#58a6ff}
-*{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--fg);
-font:15px/1.6 -apple-system,"PingFang SC","Microsoft YaHei",sans-serif}
-a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
-.wrap{max-width:1080px;margin:0 auto;padding:32px 20px 64px}
-h1{font-size:22px;margin:0 0 6px}
-.sub{color:var(--dim);font-size:13px;margin-bottom:24px}
-.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px}
-.card h3{margin:0 0 4px;font-size:16px}
-.card .tag{display:inline-block;font-size:11px;color:var(--dim);
-border:1px solid var(--line);border-radius:4px;padding:1px 6px;margin-bottom:8px}
-.card p{margin:0;color:var(--dim);font-size:13px}
-form{display:flex;gap:8px;margin:18px 0 26px}
-input[type=text]{flex:1;background:var(--card);border:1px solid var(--line);
-color:var(--fg);border-radius:8px;padding:11px 13px;font-size:15px}
-button{background:var(--accent);border:0;color:#06121f;border-radius:8px;
-padding:11px 20px;font-size:15px;font-weight:600;cursor:pointer}
-table{width:100%;border-collapse:collapse;margin-top:10px;font-size:14px}
-th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
-th{color:var(--dim);font-weight:500;font-size:12px}
-.cols{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-@media(max-width:760px){.cols{grid-template-columns:1fr}}
-.badge{display:inline-block;padding:2px 9px;border-radius:5px;font-size:12px;font-weight:600}
-.badge.up{background:rgba(63,185,80,.16);color:var(--up)}
-.badge.down{background:rgba(248,81,73,.16);color:var(--down)}
-.badge.flat{background:rgba(210,153,34,.16);color:var(--flat)}
-.badge.none{background:rgba(110,118,129,.16);color:var(--none)}
-.warn{border-left:3px solid var(--flat);padding:8px 12px;background:rgba(210,153,34,.08);
-margin-top:8px;font-size:13px}
-.kv{display:grid;grid-template-columns:96px 1fr;gap:4px 12px;font-size:13px;margin-top:8px}
-.kv dt{color:var(--dim)}.kv dd{margin:0}
-.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px}
-.note{color:var(--dim);font-size:12px;margin-top:18px;
-border-top:1px solid var(--line);padding-top:12px}
+.ecpt-tag{display:inline-block;font-size:11px;color:var(--muted);
+  border:1px solid var(--border);border-radius:4px;padding:1px 6px}
+.ecpt-note{color:var(--muted);font-size:12px;margin-top:18px;
+  border-top:1px solid var(--border);padding-top:12px}
+.ecpt-cols{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:760px){.ecpt-cols{grid-template-columns:1fr}}
+.card h3{margin:0;font-size:14px;font-weight:600;line-height:1.5}
+table{width:100%;border-collapse:collapse;margin-top:10px;font-size:13px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+th{color:var(--muted);font-weight:600;font-size:12px}
+.ecpt-kv{display:grid;grid-template-columns:96px 1fr;gap:4px 12px;font-size:13px;margin-top:8px}
+.ecpt-kv dt{color:var(--muted)}
+.ecpt-kv dd{margin:0}
+.ecpt-badge{display:inline-block;padding:2px 9px;border-radius:5px;font-size:12px;font-weight:600}
+.ecpt-badge.up{background:rgba(63,185,80,.16);color:var(--ok)}
+.ecpt-badge.down{background:rgba(248,81,73,.16);color:var(--bad)}
+.ecpt-badge.flat{background:rgba(210,153,34,.16);color:var(--warn-border)}
+.ecpt-badge.none{background:rgba(110,118,129,.16);color:var(--muted)}
+.ecpt-warn{border-left:3px solid var(--warn-border);padding:8px 12px;
+  background:var(--warn-bg);margin-top:8px;font-size:13px}
+.ecpt-form{display:flex;gap:8px;margin:18px 0 26px}
+.ecpt-form input[type=text]{flex:1;background:var(--bg);border:1px solid var(--border);
+  color:var(--fg);border-radius:6px;padding:9px 12px;font-size:14px}
+.ecpt-form button{background:#1f883d;border:1px solid rgba(31,136,61,.4);color:#fff;
+  border-radius:6px;padding:9px 18px;font-size:14px;font-weight:500;cursor:pointer}
+.ecpt-form button:hover{background:#1a7f37}
+@media (prefers-color-scheme: dark){
+  .ecpt-form button{background:#238636;border-color:rgba(35,134,54,.4)}
+  .ecpt-form button:hover{background:#2ea043}
+}
+"""
+
+#: 门面页里的小脚本：把三个入口的**存活状态**点亮（与门户主页同一套
+#: ``.status`` / ``.dot`` 语义）。只读，不做任何写操作。
+_JS = """
+async function loadHealth(){
+  const base=document.body.getAttribute('data-prefix')||'';
+  try{
+    const x=await(await fetch(base+'api/health')).json();
+    const set=(id,ok,msg)=>{
+      const d=document.getElementById(id+'-dot');
+      if(d)d.className='dot '+(ok===null?'wait':ok?'ok':'bad');
+      const s=document.getElementById(id+'-status');
+      if(s)s.textContent=msg;
+    };
+    set('cpt',!!(x.cpt&&x.cpt.ok),(x.cpt&&x.cpt.ok)?'可达 · '+x.cpt.base:'不可达 · '+((x.cpt&&x.cpt.error)||'未知'));
+    set('emotion',!!(x.emotion_core&&x.emotion_core.ok),(x.emotion_core&&x.emotion_core.ok)?'可达 · '+x.emotion_core.base:'不可达 · '+((x.emotion_core&&x.emotion_core.error)||'未知'));
+    const both=(x.cpt&&x.cpt.ok)&&(x.emotion_core&&x.emotion_core.ok);
+    set('agg',both,both?'两套口径都在线':'需要上游在线才能并排');
+  }catch(e){
+    ['cpt','emotion','agg'].forEach(id=>{
+      const s=document.getElementById(id+'-status');
+      if(s)s.textContent='状态取不到';
+    });
+  }
+}
+loadHealth();
 """
 
 
-def _page(title: str, body: str) -> bytes:
+def _page(title: str, body: str, prefix: str = "") -> bytes:
+    """门面页的骨架 —— **与门户主页同一套**顶栏/配色/卡片。
+
+    ⚠️ 样式表指向门户的 ``/assets/portal.css``（绝对路径）：
+    ``/ecpt/assets/...`` 会被 nginx 路由回门面自己 ⇒ 404。
+    """
     return f"""<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>{escape(title)} · Emotion-CPT</title><style>{_CSS}</style></head>
-<body><div class="wrap">{body}</div></body></html>""".encode()
+<title>{escape(title)} · Emotion-CPT</title>
+<link rel="stylesheet" href="{PORTAL_STYLESHEET}">
+<style>{_CSS}</style></head>
+<body data-prefix="{escape(prefix)}">
+<div class="topbar">
+  <div class="brand">NDORACLE <span>监控中心</span></div>
+  <div class="nav">
+    <a href="/ops/"><span class="tag">系统监控</span> Beszel</a>
+    <a href="/dsh/">DeepSeek Harness</a>
+    <a href="/">Portal 业务探活</a>
+    <a href="{escape(prefix or '/')}" class="active">Emotion-CPT</a>
+  </div>
+</div>
+<div class="wrap">{body}</div>
+<script>{_JS}</script>
+</body></html>""".encode()
+
+
+#: 门面页里三个入口的**状态灯 id**（与门户主页的 ``.status``/``.dot`` 同名同义）。
+_STATUS_IDS = ("cpt", "emotion", "agg")
 
 
 def _portal(prefix: str = "") -> bytes:
-    cards = "\n".join(
-        f'<div class="card"><span class="tag">{escape(tag)}</span>'
-        f'<h3><a href="{escape(entry_href(path, prefix))}">{escape(name)}</a></h3>'
-        f"<p>{escape(desc)}</p></div>"
-        for path, name, desc, tag in ENTRIES
-    )
+    """统一入口页 —— 排版与门户主页**完全一致**（顶栏 + header + 卡片网格）。"""
+    cards = []
+    for path, name, desc, tag in ENTRIES:
+        href = entry_href(path, prefix)
+        if path.startswith("/aggregate"):
+            sid = "agg"
+            action = "并排对照"
+        elif path.startswith("/cpt"):
+            sid = "cpt"
+            action = "进入看板"
+        else:
+            sid = "emotion"
+            action = "进入看板"
+        cards.append(
+            f'<div class="card">'
+            f'<h2>{escape(name)}</h2>'
+            f'<p class="desc"><span class="ecpt-tag">{escape(tag)}</span> {escape(desc)}</p>'
+            f'<p class="status"><span class="dot wait" id="{sid}-dot"></span>'
+            f'<span id="{sid}-status">检查中…</span></p>'
+            f'<div class="actions">'
+            f'<a class="btn primary" href="{escape(href)}" target="_blank" rel="noopener">'
+            f"{escape(action)}</a></div></div>"
+        )
     body = f"""
+<header>
+<div>
 <h1>Emotion-CPT 统一入口</h1>
-<div class="sub">CPT × emotion-core 的共用底座 —— 判据单一真源、同一入口进。<br>
-本页只做<b>并列与对照</b>，不裁决口径。</div>
-<div class="cards">{cards}</div>
-<div class="note">
-Emotion-CPT 不合并进程：CPT（8010）/ emotion-core（8098）/ lab（8091）各自独立，
-故障域不变。<br>
-判据唯一真源在 <code>emotion_cpt.structure</code> 与 <code>emotion_cpt.snapshot</code>。
+<div class="host">CPT × emotion-core 共用底座 —— 判据单一真源、同一入口进</div>
+</div>
+</header>
+
+<main class="grid">
+{"".join(cards)}
+</main>
+
+<div class="ecpt-note">
+本页只做<b>并列与对照</b>，不裁决口径。<br>
+Emotion-CPT 不合并进程：CPT（8010）/ emotion-core（8098）/ lab（8091）各自独立，故障域不变。<br>
+判据唯一真源在 <span class="mono">emotion_cpt.structure</span> 与 <span class="mono">emotion_cpt.snapshot</span>。
 </div>"""
-    return _page("统一入口", body)
+    return _page("统一入口", body, prefix)
 
 
 def _ms_to_date(ms: Any) -> str:
@@ -153,9 +245,9 @@ def _quote_block(q: dict[str, Any]) -> str:
     chg_txt = f"{chg:+.2f}%" if isinstance(chg, (int, float)) else "—"
     return f"""
 <h3>行情</h3>
-<dl class="kv">
+<dl class="ecpt-kv">
 <dt>收盘</dt><dd class="mono">{escape(_px(q.get('close')))}
- <span style="color:var(--dim)">{escape(chg_txt)}</span></dd>
+ <span style="color:var(--muted)">{escape(chg_txt)}</span></dd>
 <dt>开/高/低</dt><dd class="mono">{escape(_px(q.get('open')))}
  / {escape(_px(q.get('high')))} / {escape(_px(q.get('low')))}</dd>
 <dt>成交额</dt><dd class="mono">{escape(amt_txt)}</dd>
@@ -168,7 +260,7 @@ def _quote_block(q: dict[str, Any]) -> str:
 def _levels_tree_block(t: dict[str, Any]) -> str:
     """CPT 的**结构级别树**（确定性缠论最硬的部分）。"""
     if not t.get("available"):
-        return f"<div class='warn'>无结构级别树：{escape(str(t.get('error') or '—'))}</div>"
+        return f"<div class='ecpt-warn'>无结构级别树：{escape(str(t.get('error') or '—'))}</div>"
     rows = ""
     for lv in t.get("levels") or []:
         span = ""
@@ -197,7 +289,7 @@ def _trust_block(cpt: dict[str, Any], quote: dict[str, Any]) -> str:
     st = cpt.get("structure") or {}
     tags = qual.get("ashare_tags") or {}
     return f"""
-<dl class="kv">
+<dl class="ecpt-kv">
 <dt>引擎</dt><dd class="mono">{escape(str(eng.get('status') or '—'))}
  · 缓冲 {escape(str(eng.get('buffer_size')))}
  · 待确认 {escape(str(eng.get('pending_count')))}
@@ -221,16 +313,16 @@ def _aggregate_page(code: str, payload: dict[str, Any] | None, prefix: str = "")
      你输的代码被**忽略**，页面永远显示 600519。
      ⇒ 后端 `/aggregate` 本来就读 `?code=`（实测标题会变）⇒ 这里对齐它。
      ⚠️ 本段在 f-string 里 ⇒ 注释里的花括号会被**求值** ⇒ 不能写裸花括号。 -->
-<form action="{escape(prefix or '/')}aggregate" method="get">
+<form action="{escape(prefix or '/')}aggregate" method="get" class="ecpt-form">
 <input type="text" name="code" value="{escape(code)}" placeholder="6 位代码，如 600519">
 <button type="submit">并排</button></form>"""
     if not payload or not payload.get("ok"):
         err = (payload or {}).get("error", "未知错误")
         body = (
             f"<h1>同票并排</h1>{input_box}"
-            f"<div class='warn'>无法构造 payload：{escape(str(err))}</div>"
+            f"<div class='ecpt-warn'>无法构造 payload：{escape(str(err))}</div>"
         )
-        return _page("同票并排", body)
+        return _page("同票并排", body, prefix)
 
     panels = payload["panels"]
     cpt, emo, lv = panels["cpt"], panels["emotion"], panels["levels"]
@@ -242,7 +334,7 @@ def _aggregate_page(code: str, payload: dict[str, Any] | None, prefix: str = "")
         for v in payload.get("verdicts", []):
             rows.append(
                 f"<tr><td>{escape(str(v['source']))}</td>"
-                f"<td><span class='badge {v['cls']}'>{escape(str(v['raw'] or '—'))}</span></td>"
+                f"<td><span class='ecpt-badge {v['cls']}'>{escape(str(v['raw'] or '—'))}</span></td>"
                 f"<td>{escape(str(v['direction']))}</td></tr>"
             )
         return "\n".join(rows)
@@ -251,21 +343,21 @@ def _aggregate_page(code: str, payload: dict[str, Any] | None, prefix: str = "")
     conflict_html = ""
     if conflicts:
         items = "\n".join(
-            f"<div class='warn'><b>{escape(c['kind'])}</b> · {escape(c.get('note',''))}<br>"
+            f"<div class='ecpt-warn'><b>{escape(c['kind'])}</b> · {escape(c.get('note',''))}<br>"
             f"CPT：{escape(c.get('cpt','—'))}<br>emotion：{escape(c.get('emotion','—'))}</div>"
             for c in conflicts
         )
         conflict_html = f"<h3>差异（{len(conflicts)}）</h3>{items}"
     else:
         conflict_html = (
-            "<h3>差异</h3><div class='warn' style='border-color:#3fb950'>"
+            "<h3>差异</h3><div class='ecpt-warn' style='border-color:#3fb950'>"
             "三套口径未见方向冲突</div>"
         )
 
     cpt_kv = ""
     if cpt.get("available"):
         cpt_kv = f"""
-<dl class="kv">
+<dl class="ecpt-kv">
 <dt>结论</dt><dd><b>{escape(str(cpt.get('action') or '—'))}</b>
  {escape(str(cpt.get('action_label') or ''))}</dd>
 <dt>说法</dt><dd>{escape(str(cpt.get('headline') or '—'))}</dd>
@@ -278,7 +370,7 @@ def _aggregate_page(code: str, payload: dict[str, Any] | None, prefix: str = "")
 </dl>
 {_quote_block(cpt.get('quote') or {})}"""
     else:
-        cpt_kv = f"<div class='warn'>CPT 不可用：{escape(str(cpt.get('error')))}</div>"
+        cpt_kv = f"<div class='ecpt-warn'>CPT 不可用：{escape(str(cpt.get('error')))}</div>"
 
     emo_kv = ""
     if emo.get("available"):
@@ -288,7 +380,7 @@ def _aggregate_page(code: str, payload: dict[str, Any] | None, prefix: str = "")
         stop_detail = ""
         if (stop or {}).get("detail"):
             stop_detail = (
-                '<br><span style="color:var(--dim)">'
+                '<br><span style="color:var(--muted)">'
                 + escape(str((stop or {}).get("detail")))
                 + "</span>"
             )
@@ -306,7 +398,7 @@ def _aggregate_page(code: str, payload: dict[str, Any] | None, prefix: str = "")
             else "<p style='color:var(--dim)'>当日无该票的策略信号</p>"
         )
         emo_kv = f"""
-<dl class="kv">
+<dl class="ecpt-kv">
 <dt>持仓决策</dt><dd><b>{escape(str(emo.get('action') or '—'))}</b>
  {escape(str(emo.get('action_label') or ''))}</dd>
 <dt>市场阶段</dt><dd>{escape(str(emo.get('phase') or '—'))}
@@ -315,17 +407,17 @@ def _aggregate_page(code: str, payload: dict[str, Any] | None, prefix: str = "")
 <dt>龙头环境</dt><dd class="mono">{escape(str(emo.get('dragon_env') or '—'))}</dd>
 <dt>现价</dt><dd class="mono">{escape(str(emo.get('market_price')))}</dd>
 <dt>止损</dt><dd class="mono">{escape(str((stop or {}).get('price')))}
- <span style="color:var(--dim)">({escape(str((stop or {}).get('basis')))})</span>
+ <span style="color:var(--muted)">({escape(str((stop or {}).get('basis')))})</span>
  {stop_detail}</dd>
 </dl>
 <h3>策略信号</h3>{strat_html}"""
     else:
-        emo_kv = f"<div class='warn'>emotion-core 不可用：{escape(str(emo.get('error')))}</div>"
+        emo_kv = f"<div class='ecpt-warn'>emotion-core 不可用：{escape(str(emo.get('error')))}</div>"
 
     lv_kv = ""
     if lv.get("available"):
         lv_kv = f"""
-<dl class="kv">
+<dl class="ecpt-kv">
 <dt>口径</dt><dd class="mono">{escape(str(lv.get('basis')))}</dd>
 <dt>买参考</dt><dd class="mono">{escape(str(lv.get('buy_reference')))}</dd>
 <dt>卖参考</dt><dd class="mono">{escape(str(lv.get('sell_reference')))}</dd>
@@ -333,28 +425,31 @@ def _aggregate_page(code: str, payload: dict[str, Any] | None, prefix: str = "")
 <dt>目标</dt><dd class="mono">{escape(str(lv.get('target_price')))}</dd>
 </dl>"""
     else:
-        lv_kv = f"<div class='warn'>结构位不可用：{escape(str(lv.get('error')))}</div>"
+        lv_kv = f"<div class='ecpt-warn'>结构位不可用：{escape(str(lv.get('error')))}</div>"
 
     tree_kv = _levels_tree_block(cpt.get("levels_tree") or {})
     trust_kv = _trust_block(cpt, cpt.get("quote") or {})
 
     body = f"""
+<header>
+<div>
 <h1>同票并排 · {escape(code)}</h1>
-<div class="sub">{escape(payload['notice'])}<br>
-生成于 <span class="mono">{escape(payload['generated_at'])}</span></div>
+<div class="host">{escape(payload['notice'])} · 生成于 <span class="mono">{escape(payload['generated_at'])}</span></div>
+</div>
+</header>
 {input_box}
 <table><tr><th>口径</th><th>结论</th><th>方向</th></tr>
 {verdict_rows()}</table>
 {conflict_html}
-<div class="cols">
+<div class="ecpt-cols">
   <div class="card"><h3>CPT · 确定性缠论</h3>{cpt_kv}</div>
   <div class="card"><h3>emotion-core · 情绪周期</h3>{emo_kv}</div>
 </div>
 <div class="card" style="margin-top:14px"><h3>结构位（emotion 口径）</h3>{lv_kv}</div>
 <div class="card" style="margin-top:14px"><h3>结构级别树（CPT 确定性缠论）</h3>{tree_kv}</div>
 <div class="card" style="margin-top:14px"><h3>数据可信度</h3>{trust_kv}</div>
-<div class="note">本页<b>只读</b>：不写任何库、不改任何状态。差异只陈述事实，不裁决。</div>"""
-    return _page(f"同票并排 {payload['code']}", body)
+<div class="ecpt-note">本页<b>只读</b>：不写任何库、不改任何状态。差异只陈述事实，不裁决。</div>"""
+    return _page(f"同票并排 {payload['code']}", body, prefix)
 
 
 class FacadeHandler(BaseHTTPRequestHandler):
@@ -439,8 +534,9 @@ class FacadeHandler(BaseHTTPRequestHandler):
         self._send(
             _page(
                 "404",
-                "<h1>404</h1><p>没有这个路径。"
-                f"<a href='{escape(prefix or '/')}'>回门户</a></p>",
+                "<h1>404</h1><p>没有这个路径。</p>"
+                f"<p><a href='{escape(prefix or '/')}'>回统一入口</a></p>",
+                prefix,
             ),
             404,
         )
