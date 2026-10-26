@@ -53,6 +53,13 @@ def check_static() -> list[str]:
         text = p.read_text(encoding="utf-8")
         if f"location {NGINX_PREFIX} " in text:
             hit = True
+        # ⚠️ 2026-10-26：/dsh/ 已归 DeepSeek Harness ⇒ 真相源里再出现
+        #    `location /dsh/` 就是回归（会把 DSH 的入口顶掉）。
+        if re.search(r"location\s+/dsh/", text):
+            issues.append(
+                f"真相源片段 {p.name} 里还有 `location /dsh/` ⇒ "
+                f"/dsh/ 已归 DeepSeek Harness，必须删掉"
+            )
     if not hit:
         issues.append(
             f"nginx 真相源片段里没有 `location {NGINX_PREFIX} `"
@@ -95,35 +102,35 @@ def check_live(base: str) -> tuple[list[str], bool]:
 def check_links_follow_prefix(base: str, prefix: str) -> list[str]:
     """带前缀请求门面 ⇒ 页面里**本门面**的链接必须带该前缀。
 
-    ⚠️ 为什么要有：「页面上的子链接指向一个 nginx 上**不存在**的 location」
-    是**静默**的（用户点了才 404）⇒ 必须有断言钉住。
+    ⚠️ 2026-10-26：CPT / emotion **收编**进 /ecpt/ ⇒ 三个入口**全部**要带前缀。
+    旧版判据是「别的项目的入口不该带前缀」⇒ 现在**反了**，已一并改掉。
 
-    ⇒ 本门面的链接（``/aggregate``）必须带前缀；
-    ⇒ 别的项目的入口（``/cpt/``、``/emotion/``）**必须保持绝对、不加前缀**
-    （它们是**它们自己的** nginx location）。
+    ⚠️ 为什么要有这个断言：「页面上的子链接指向一个 nginx 上**不存在**的 location」
+    是**静默**的（用户点了才 404）⇒ 必须有断言钉住。
     """
     issues: list[str] = []
     url = f"{base}/"
     try:
         req = urllib.request.Request(url, headers={"X-Forwarded-Prefix": prefix})
-        with urllib.request.urlopen(req, timeout=15) as resp:  # noqa: S310
+        with urllib.request.urlopen(req, timeout=15) as resp:
             html = resp.read().decode("utf-8", errors="replace")
     except (urllib.error.URLError, OSError) as exc:
         print(f"  (探不到门面：{exc} ⇒ 跳过链接判据)", file=sys.stderr)
         return []
     hrefs = set(re.findall(r'href="([^"]+)"', html))
-    own = [h for h in hrefs if "aggregate" in h]
-    if not own:
-        return [f"门户页上找不到「同票并排」的链接（href 集合：{sorted(hrefs)}）"]
-    for h in own:
-        if not h.startswith(prefix):
-            issues.append(
-                f"门户页的链接 {h!r} **没带挂载前缀** {prefix!r} ⇒ "
-                f"点下去会落到 nginx 上不存在的路径"
-            )
+    base_prefix = prefix.rstrip("/")
+    expected = {f"{base_prefix}{p}" for p in ("/cpt/", "/emotion/", "/aggregate")}
+    missing = expected - hrefs
+    if missing:
+        issues.append(
+            f"门户页上的入口链接**没带挂载前缀** {prefix!r}（缺：{sorted(missing)}）"
+            f" ⇒ 点下去会落到 nginx 上不存在的路径"
+        )
     for h in hrefs:
-        if h.startswith(("/cpt/", "/emotion/")) and h.startswith(prefix):
-            issues.append(f"别的项目的入口 {h!r} 被错误地加了本门面的前缀")
+        if h.startswith("/ecpt/") and not h.startswith(prefix):
+            issues.append(
+                f"门户页的链接 {h!r} 带了**别的**前缀（当前挂载前缀是 {prefix!r}）"
+            )
     return issues
 
 
@@ -142,8 +149,9 @@ def main(argv: list[str] | None = None) -> int:
         live_issues, probed = check_live(args.public_base)
         issues.extend(live_issues)
         live_note = "已探测公网" if probed else "探不到公网 ⇒ 跳过活体判据"
-        # 链接是否跟着挂载前缀走（门面同时挂在 /ecpt/ 与 /dsh/ 下）
-        for pfx in ("/ecpt/", "/dsh/"):
+        # 链接是否跟着挂载前缀走
+        # ⚠️ 2026-10-26：门面**只剩** /ecpt/ 一个前缀（/dsh/ 归 DeepSeek Harness）
+        for pfx in ("/ecpt/",):
             issues.extend(check_links_follow_prefix(args.facade_base, pfx))
 
     if issues:

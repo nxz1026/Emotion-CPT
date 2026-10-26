@@ -10,6 +10,9 @@ Group=ubuntu
 WorkingDirectory=/home/ubuntu/DSH/emotion-core
 ExecStart=/home/ubuntu/DSH/emotion-core/.venv/bin/python -m emotion_core.presentation.server
 Environment=PYTHONPATH=/home/ubuntu/DSH/emotion-core/src
+#: 看板挂载前缀（2026-10-26 起收编到 /ecpt/emotion/）⇒
+#:    模板里 {{ base_path }} 生成的链接要跟 nginx 的 location 对齐。
+Environment=EMOTION_BASE_PATH=/ecpt/emotion
 Restart=on-failure
 RestartSec=10s
 
