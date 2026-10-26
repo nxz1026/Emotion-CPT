@@ -210,7 +210,7 @@ class RulesConfig:
             raise TypeError(f"levels 必须是 list/tuple, 收到 {type(levels).__name__}")
         kwargs = {k: v for k, v in data.items() if k in cls.__dataclass_fields__}
         kwargs["levels"] = tuple(int(x) for x in levels)
-        kwargs.pop("config_version", None)  # 版本号只跟随代码
+        # config_version 不 pop：传给 __post_init__ 去拒收异版本
         return cls(**kwargs)
 
     def __post_init__(self) -> None:
