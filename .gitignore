@@ -8,6 +8,8 @@ dbconfig
 # Python
 __pycache__/
 *.py[cod]
+*.so
+*.egg
 .venv/
 venv/
 *.egg-info/
@@ -18,6 +20,14 @@ dist/
 .ruff_cache/
 .coverage
 htmlcov/
+pip-wheel-metadata/
+# 编辑器
+.vscode/
+.idea/
+# 系统
+.DS_Store
 # 本地产物
-*.log
+*..log
 /tmp/
+# 归档脚本（一次性实验/迁移，不入仓）
+scripts/archive/
