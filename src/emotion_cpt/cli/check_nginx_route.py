@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import argparse
 import pathlib
+import re
 import sys
 import urllib.error
 import urllib.request
@@ -101,9 +102,6 @@ def check_links_follow_prefix(base: str, prefix: str) -> list[str]:
     ⇒ 别的项目的入口（``/cpt/``、``/emotion/``）**必须保持绝对、不加前缀**
     （它们是**它们自己的** nginx location）。
     """
-    import re
-    import urllib.request
-
     issues: list[str] = []
     url = f"{base}/"
     try:

@@ -316,7 +316,8 @@ def build_stock_payload(code: str) -> dict[str, Any]:
     levels = (points or {}).get("levels") or {}
     holding_action = (holding or {}).get("action")
 
-    shown = len(_verdicts(cpt_action, holding_action, strategies))
+    verdicts = _verdicts(cpt_action, holding_action, strategies)
+    shown = len(verdicts)
     payload = {
         "ok": True,
         "code": norm,
@@ -375,7 +376,7 @@ def build_stock_payload(code: str) -> dict[str, Any]:
                 "detail": levels.get("detail"),
             },
         },
-        "verdicts": _verdicts(cpt_action, holding_action, strategies),
+        "verdicts": verdicts,
         "conflicts": _conflicts(cpt_action, holding_action, strategies, levels.get("basis")),
         "shown_calibers": shown,
     }

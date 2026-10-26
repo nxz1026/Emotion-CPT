@@ -24,7 +24,6 @@ from typing import Final
 DEFAULT_PORT: Final[int] = 8092
 HOST: Final[str] = "127.0.0.1"
 
-#: nginx 里本门面的前缀
 #: nginx 里本门面的前缀。
 #: ⚠️ 2026-10-24：原为 ``/dsh/`` ⇒ 那是 dsh-web 平台的路径，与
 #:    ``/emotion/``、``/cpt/`` **不对称**（那两个是项目名）。

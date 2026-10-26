@@ -54,9 +54,6 @@ BOARD_PCT_BSE: Final[float] = 30.0
 #: 主板 ST 涨跌幅（%）
 BOARD_PCT_ST: Final[float] = 5.0
 
-#: 一手 = 100 股
-SHARES_PER_LOT: Final[int] = 100
-
 #: 创业板 / 科创板代码前缀
 _GROWTH_PREFIXES: Final[tuple[str, ...]] = ("300", "301", "688", "689")
 #: 北交所代码前缀
@@ -136,7 +133,7 @@ def board_pct_milli(code: str) -> int:
     code = code.strip()
     if code.startswith("bj"):
         return _PCT_MILLI_BSE
-    if code.startswith(("30", "68")):
+    if code.startswith(("300", "301", "688", "689")):
         return _PCT_MILLI_GROWTH
     if code.startswith(("4", "8", "92")):
         return _PCT_MILLI_BSE
@@ -232,7 +229,6 @@ __all__ = (
     "BOARD_PCT_GROWTH",
     "BOARD_PCT_MAIN",
     "BOARD_PCT_ST",
-    "SHARES_PER_LOT",
     "board_of",
     "board_pct_limit",
     "board_pct_milli",

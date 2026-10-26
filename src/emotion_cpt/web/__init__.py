@@ -15,5 +15,3 @@ emotion-core 的 ``cpt_client`` 整套降级设计建立在「CPT 可能挂」�
 """
 
 from __future__ import annotations
-
-__all__ = ("aggregate", "app", "facade")

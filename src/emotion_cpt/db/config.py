@@ -11,14 +11,10 @@
 from __future__ import annotations
 
 import pathlib
-import re
 from typing import Final
 
 #: 凭据文件位置。**不得**把内容写进仓。
 DBCONFIG_FILE: Final[pathlib.Path] = pathlib.Path.home() / ".dbconfig"
-
-#: 等价于上游的 ``^\$([A-Za-z_][A-Za-z0-9_]*)=(.*)$``
-_LINE_RE: Final[re.Pattern[str]] = re.compile(r"^\$([A-Za-z_][A-Za-z0-9_]*)=(.*)$")
 
 KEY_HOST: Final[str] = "$RDSHOST"
 KEY_PASSWORD: Final[str] = "$DB_PW"

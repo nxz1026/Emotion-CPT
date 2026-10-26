@@ -39,6 +39,7 @@ include = ["emotion_cpt*"]
 #    ⇒ 上游非 editable 安装 ⇒ `load_crontab()` 直接 FileNotFoundError
 #    ⇒ **上游日报静默失效**（已坏、只是还没被触发）
 emotion_cpt = [
+    "py.typed",
     "deploy/systemd/*.service",
     "deploy/systemd/*.timer",
     "deploy/systemd/*.md",

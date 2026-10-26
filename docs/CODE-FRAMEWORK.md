@@ -203,7 +203,7 @@ from emotion_cpt.web.aggregate.server import build_stock_payload
 | 脚本 | 检查什么 | 红了意味着 |
 |---|---|---|
 | `check_contracts.py` | 本仓契约 ↔ 上游两侧实际代码值 | 有一侧漂移了，**必须裁决** |
-| `check_table_manifest.py` | manifest ↔ 真库 `pg_tables` | 有表没登记，或登记了表不存在 |
+| `check_manifest.py` | manifest ↔ 真库 `pg_tables` | 有表没登记，或登记了表不存在 |
 | `check_crontab.py` | 仓内 ↔ 线上 crontab **双向** | 有作业只活在一侧（**静默停摆的 catcher**） |
 | `check_unit_paths.py` | systemd unit 里的写死路径是否存在 | unit 会指向不存在的目录 |
 | `check_doc_drift.py` | 本仓文档里的数字/声明 ↔ 代码 | 文档开始漂移（上游同款问题，不重蹈） |

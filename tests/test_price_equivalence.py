@@ -22,6 +22,7 @@ from pathlib import Path
 
 import pytest
 
+from emotion_cpt.structure import intraday_rules
 from emotion_cpt.structure import price as new
 
 #: 生产上抽样覆盖到的代码（各板块 + ST 名）
@@ -146,4 +147,4 @@ def test_bse_st_is_thirty_percent():
 
 
 def test_shares_per_lot_is_hundred():
-    assert new.SHARES_PER_LOT == 100
+    assert intraday_rules.SHARES_PER_LOT == 100

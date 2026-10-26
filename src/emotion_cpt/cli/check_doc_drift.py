@@ -65,20 +65,6 @@ from emotion_cpt.contracts import intraday_seal, pricing, shared_tables, tables
 #: 仓根（``docs/`` 在仓根，不在包里 —— 文档是仓库资产）
 _REPO_ROOT: Final[pathlib.Path] = pathlib.Path(__file__).resolve().parents[3]
 
-#: 数字声明只有落在含这些词的**段落**里，才算「契约声明」
-_CONTRACT_HINTS: Final[tuple[str, ...]] = (
-    "契约",
-    "封板",
-    "manifest",
-    "Manifest",
-    "共享表",
-    "反契约",
-    "列定义",
-    "表归属",
-    "intraday_seal",
-    "INTRADAY_SEAL",
-)
-
 #: contracts/pricing 的常量（本项目语境里「常量」指的就是这批）
 _PRICING_CONSTANTS: Final[dict[str, Any]] = {
     n: getattr(pricing, n)
@@ -241,7 +227,7 @@ def _doc_tree_files(text: str) -> list[str]:
             continue
         lines = block.splitlines()
         root = lines[0].strip() if lines else ""
-        if root.rstrip("/").split("/")[-1] != _REPO_NAME:
+        if root.rstrip("/").split("/")[-1].lower() != _REPO_NAME.lower():
             continue  # 不是本仓的树
         # 栈：(缩进, 目录名)
         stack: list[tuple[int, str]] = []
@@ -260,7 +246,7 @@ def _doc_tree_files(text: str) -> list[str]:
             else:
                 parent = "".join(n for _i, n in stack)
                 rel = parent + name
-                if rel.startswith(_REPO_NAME + "/"):
+                if rel.lower().startswith(_REPO_NAME.lower() + "/"):
                     rel = rel[len(_REPO_NAME) + 1 :]
                 out.append(rel)
     return out

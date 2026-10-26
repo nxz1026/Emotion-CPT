@@ -161,15 +161,18 @@ def _tuple_of_names(path: pathlib.Path, var: str) -> tuple[str, ...]:
         return ()
     for node in tree.body:
         targets: list[ast.expr] = []
+        stmt_value: ast.expr | None = None
         if isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name):
             targets = [node.target]
+            stmt_value = node.value
         elif isinstance(node, ast.Assign):
             targets = list(node.targets)
+            stmt_value = node.value
         for t in targets:
-            if not isinstance(t, ast.Name) or t.id != var or node.value is None:
+            if not isinstance(t, ast.Name) or t.id != var or stmt_value is None:
                 continue
             try:
-                value = ast.literal_eval(node.value)
+                value = ast.literal_eval(stmt_value)
             except (ValueError, SyntaxError):
                 continue
             if isinstance(value, (tuple, list)):
