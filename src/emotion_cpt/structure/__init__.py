@@ -12,33 +12,42 @@
 
 from __future__ import annotations
 
-# ⚠️ 2026-10-26：本清单此前**还 import 着 521c51b 已从 git 删除的死模块**
-#    （a_share_rules / containment_trace / levels / market_time / recursion /
-#      signal / structure_events / trend_type）⇒ 新克隆的仓里那些模块根本不存在
-#    ⇒ ``import emotion_cpt.structure`` **整个包 ImportError**（工作区当时
-#    还能跑，只是靠磁盘上残留的旧副本撑着）。
-#    ⇒ 这里与 521c51b 对齐：那批模块确实无人引用（CPT / emotion-core / portal
-#    三仓实测零引用）⇒ 不再 import；它们的残留副本已移出仓库。
 from . import (
+    a_share_rules,
     bi,
     config,
     contain,
+    containment_trace,
     first_buy,
     fractal,
     intraday_rules,
+    levels,
+    market_time,
     models,
+    recursion,
+    signal,
+    structure_events,
+    trend_type,
     types,
     zhongshu,
 )
 
 __all__ = (
+    "a_share_rules",
     "bi",
     "config",
     "contain",
+    "containment_trace",
     "first_buy",
     "fractal",
     "intraday_rules",
+    "levels",
+    "market_time",
     "models",
+    "recursion",
+    "signal",
+    "structure_events",
+    "trend_type",
     "types",
     "zhongshu",
 )
