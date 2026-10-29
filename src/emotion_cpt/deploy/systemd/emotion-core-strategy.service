@@ -22,6 +22,14 @@ Environment=EC_STRATEGY_ENABLED=true
 #    中断也不再丢数据（按批落库 + 增量续跑，见 emotion-core 8b83e95），
 #    所以这里放宽只是让「一轮能跑完」，不是兜底。
 TimeoutStartSec=14400
+# ⚠️ 2026-10-29 二次修复：TimeoutStartSec 只是**外部**超时，被它杀掉时收尾逻辑
+#    （落库尾巴 / 快照 / WATCH 推送）根本没跑。现在进程内有墙钟预算
+#    （EC_STRATEGY_TIME_BUDGET 默认 12600s = 3.5h，留 30min 收尾）自己先收口，
+#    并装了 SIGTERM/SIGINT 优雅停止；TimeoutStartSec 只作兜底。
+#    TimeoutStopSec 默认只有 90s，而一次在途 LLM 调用 p90 就 60s、重试可达三位数
+#    秒，收尾还要推 WATCH（每次 HTTP 超时 10s）⇒ 90s 内跑不完就会被 SIGKILL。
+#    抬到 300s 覆盖「在途调用 + 尾巴落库 + 快照 + 推送」。
+TimeoutStopSec=300
 Nice=10
 
 [Install]
