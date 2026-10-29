@@ -14,7 +14,14 @@ Environment=PYTHONPATH=/home/ubuntu/DSH/emotion-core/src
 Environment=EC_STRATEGY_ENABLED=true
 # 2026-10-09：EC_STRATEGY_MAX_LLM 由 50 抬到 300（20 只 × 15 策略），
 # 实测每次 LLM 调用约 7.2s ⇒ 300 次约 36min，1h 余量不足，抬到 2h。
-TimeoutStartSec=7200
+#
+# ⚠️ 2026-10-29 抬到 4h：上游 apihub 延迟劣化后，实测**每轮 233 次调用就撞满 2h**
+#    （调用间隔中位 23.5s、p90 60s）⇒ 300 次的配额永远跑不完，每天一次
+#    「Result=timeout」的假故障。按 p90 估 300×(60+1.5) ≈ 5.1h，取 4h
+#    覆盖中位/尾部的主要区间（连续失败 8 次会熔断，不会真跑满 5h）。
+#    中断也不再丢数据（按批落库 + 增量续跑，见 emotion-core 8b83e95），
+#    所以这里放宽只是让「一轮能跑完」，不是兜底。
+TimeoutStartSec=14400
 Nice=10
 
 [Install]

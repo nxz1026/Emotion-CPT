@@ -1,6 +1,8 @@
 # owner: emotion-core
 [Unit]
-Description=Emotion Core strategy observer: weekdays 17:50 Shanghai (after daily pipeline)
+# ⚠️ 2026-10-29：描述原来写 17:50，而 OnCalendar 早已改成 18:15（见下）
+#    ⇒ 文档与事实不一致，排查时按描述算时间会差 25 分钟。以 OnCalendar 为准。
+Description=Emotion Core strategy observer: weekdays 18:15 Shanghai (after daily pipeline)
 After=emotion-core-daily.timer
 
 [Timer]

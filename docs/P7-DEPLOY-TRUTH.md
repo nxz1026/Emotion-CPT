@@ -229,7 +229,7 @@ Emotion-CPT 46 passed
 
 | 谁 | 声明 | 实际 UTC |
 |---|---|---|
-| `emotion-core-strategy.timer` | `Mon..Fri 17:50 Asia/Shanghai` | 09:50 |
+| `emotion-core-strategy.timer` | `Mon..Fri 18:15 Asia/Shanghai` | 10:15 |
 | crontab `factor-recompute-daily.sh` | `50 9 * * *`（机器本地时区） | 09:50 |
 
 ⇒ **同一分钟起跑**。因子重算日常 46 秒（有账本跳过），但**首次全量 ~2 小时** ⇒ 撞上就重叠。

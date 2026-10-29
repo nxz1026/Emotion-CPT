@@ -7,4 +7,15 @@ After=network.target
 Type=oneshot
 User=root
 WorkingDirectory=/home/ubuntu/DSH/portal
-ExecStart=/usr/local/bin/portal-systemd-action.sh
+# ⚠️ 2026-10-29：脚本从 /usr/local/bin/portal-systemd-action.sh（**不在任何仓库**）
+#    搬进本仓库 ⇒ 有历史、有备份、能被审计。仓库那份是**唯一真相源**。
+ExecStart=/home/ubuntu/DSH/portal/deploy/systemd-action-executor.sh
+
+# Hardening（2026-10-29）
+# ⚠️ 不能 ProtectSystem=strict：执行器要写 deploy/systemd-requests/（在 /home 下）。
+#    systemctl 走 D-Bus 与 PID1 通信，不需要写 /etc、也不需要提权。
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=read-only
+ReadWritePaths=/home/ubuntu/DSH/portal/deploy/systemd-requests
