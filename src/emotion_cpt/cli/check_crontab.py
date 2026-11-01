@@ -32,14 +32,30 @@ from emotion_cpt.deploy.cron_spec import parse_crontab
 DEFAULT_CRONTAB = Path(__file__).resolve().parents[1] / "deploy" / "cron" / "crontab"
 
 
-def _live_crontab() -> str:
+def _live_crontab() -> str | None:
+    """读线上 crontab；**读不到**返回 ``None``（与「线上是空的」严格区分）。
+
+    ⚠️ 为什么必须区分：``crontab -l`` 在**无 crontab** 时返回码 1 + stderr
+    ``no crontab for <user>``（真实状态 = 空），在**权限不足/沙箱拦截**时也返回
+    非 0（真实状态 = **未知**）。早先把两者都当空串 ⇒ 把「读不到」误报成
+    「16 条作业全丢」，审计时白查一轮。现在权限类失败 ⇒ 跳过双向对账并明说。
+    """
     try:
-        return subprocess.run(  # noqa: S603 - 固定命令
+        proc = subprocess.run(  # noqa: S603 - 固定命令
             ["crontab", "-l"], capture_output=True, text=True, timeout=20, check=False
-        ).stdout
+        )
     except (OSError, subprocess.SubprocessError) as exc:
-        print(f"⚠️ 读不到线上 crontab：{exc}", file=sys.stderr)
-        return ""
+        print(f"⚠️ 读不到线上 crontab（{exc}）⇒ 跳过双向对账", file=sys.stderr)
+        return None
+    if proc.returncode == 0:
+        return proc.stdout
+    if "no crontab" in (proc.stderr or "").lower():
+        return ""  # 该用户确实没有 crontab：空 = 真相
+    print(
+        f"⚠️ 读不到线上 crontab（{proc.stderr.strip() or proc.returncode}）⇒ 跳过双向对账",
+        file=sys.stderr,
+    )
+    return None
 
 
 def _exec_bits(paths: list[Path]) -> list[str]:
@@ -84,8 +100,9 @@ def main(argv: list[str] | None = None) -> int:
         issues.append(f"脚本缺执行位（cron 不经过 shell ⇒ Permission denied 且静默）：{bad}")
 
     # ── ② 双向对账 ──
-    if not args.skip_live:
-        live_jobs = parse_crontab(_live_crontab())
+    live_text = None if args.skip_live else _live_crontab()
+    if live_text is not None:
+        live_jobs = parse_crontab(live_text)
         live_lines = {job.line for job in live_jobs}
         repo_lines = set(by_line)
         for line in sorted(repo_lines - live_lines):
@@ -114,6 +131,8 @@ def main(argv: list[str] | None = None) -> int:
         groups[job.owner or "未归属"] = groups.get(job.owner or "未归属", 0) + 1
     detail = "、".join(f"{owner} {n} 条" for owner, n in sorted(groups.items()))
     print(f"✅ crontab 一致（仓内 {len(repo_jobs)} 条：{detail}）")
+    if live_text is None:
+        print("   ⚠️ 线上 crontab 未对账（--skip-live 或读不到）⇒ 本条只覆盖仓内自检")
     print("   ⇒ 真相源宿主 = Emotion-CPT；**变更责任在 owner 那一栏**")
     return 0
 

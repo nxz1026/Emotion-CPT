@@ -240,3 +240,35 @@ def test_no_stale_egg_info_shadowing_metadata():
         "  ⇒ 修法：删掉它（venv 里有真正的 dist-info，不需要它）。"
     )
 
+
+
+def test_reader_side_projection_subset_is_allowed(tmp_path: Path):
+    """读方只取 5 列（真实 CPT 的 ``_SELECT_COLS``）⇒ **不算漂移**。
+
+    2026-11-01 补：改判据前，5 列投影被当成漂移报红（假阳性）。
+    契约约束的是写入侧完整性，读取侧投影合法。
+    """
+    root = _make_upstream(tmp_path)
+    store = root / "cpt" / "storage" / "intraday_seal_store.py"
+    old = (
+        '"at, code, sealed, bid1_lots, limit_price, price, prev_close, distance_pct, is_st"'
+    )
+    new = '"at, code, sealed, bid1_lots, limit_price"'
+    text = store.read_text(encoding="utf-8")
+    assert old in text
+    store.write_text(text.replace(old, new), encoding="utf-8")
+    issues = _run(root)
+    assert [i for i in issues if "cpt/" in i.where] == [], issues
+
+
+def test_insert_side_projection_is_caught(tmp_path: Path):
+    """写入侧少写列（投影）⇒ **必须报红**。"""
+    root = _make_upstream(tmp_path)
+    store = root / "cpt" / "storage" / "intraday_seal_store.py"
+    text = store.read_text(encoding="utf-8")
+    old = '"at, code, sealed, bid1_lots, limit_price, price, prev_close, distance_pct, is_st) "'
+    new = '"at, code, sealed, bid1_lots, limit_price) "'
+    assert old in text
+    store.write_text(text.replace(old, new), encoding="utf-8")
+    issues = _run(root)
+    assert any(i.kind == "drift" and "写入侧" in i.detail for i in issues), issues

@@ -180,8 +180,16 @@ def _tuple_of_names(path: pathlib.Path, var: str) -> tuple[str, ...]:
     return ()
 
 
-def _column_lists(path: pathlib.Path) -> list[tuple[str, ...]]:
-    """找出文件里**所有**「像列清单」的常量。
+def _column_lists(path: pathlib.Path) -> list[tuple[str, tuple[str, ...]]]:
+    """找出文件里**所有**「像列清单」的常量，并标注写入侧/读取侧。
+
+    返回值 ``(kind, columns)``，``kind`` ∈ ``{"insert", "select"}``：
+
+    - ``insert``：字面量里出现 ``INSERT INTO ... intraday_seal_snapshot (...)``。
+      写入侧**必须写全 9 列**，不许投影。
+    - ``select``：其余常量（``_SELECT_COLS`` 这类投影、读方元组）。
+      允许是 9 列的**非空子集** —— 读方只取需要的列不是漂移，
+      这正是 CPT ``_SELECT_COLS`` 只取 5 列的原因（见 docs/CONTRACTS.md §3）。
 
     为什么这么挑：
     - **只看模块级赋值**（``Assign`` / ``AnnAssign``）—— 文档字符串里的散文
@@ -195,15 +203,17 @@ def _column_lists(path: pathlib.Path) -> list[tuple[str, ...]]:
     if tree is None:
         return []
     known = {c.name for c in intraday_seal.INTRADAY_SEAL_COLUMNS}
-    out: list[tuple[str, ...]] = []
+    out: list[tuple[str, tuple[str, ...]]] = []
     for node in tree.body:
         value = node.value if isinstance(node, (ast.Assign, ast.AnnAssign)) else None
         if value is None:
             continue
+        kind = "select"
         parts: list[str] | None = None
         if isinstance(value, ast.Constant) and isinstance(value.value, str):
             text = value.value
             if "INSERT INTO" in text and "intraday_seal_snapshot" in text:
+                kind = "insert"
                 # ⚠️ INSERT 语句是**多个字面量拼接**的，AST 会折叠成一个常量 ——
                 #    整串里还含 ``ON CONFLICT (at, code)``，用 rsplit(")") 会把它吃进来。
                 # ⇒ 精确取「表名后面第一个括号组」：列清单里没有嵌套括号。
@@ -228,9 +238,9 @@ def _column_lists(path: pathlib.Path) -> list[tuple[str, ...]]:
             continue
         if sum(1 for p in parts if p in known) < 4:
             continue
-        out.append(tuple(parts))
-    seen: set[tuple[str, ...]] = set()
-    uniq: list[tuple[str, ...]] = []
+        out.append((kind, tuple(parts)))
+    seen: set[tuple[str, tuple[str, ...]]] = set()
+    uniq: list[tuple[str, tuple[str, ...]]] = []
     for item in out:
         if item not in seen:
             seen.add(item)
@@ -296,9 +306,19 @@ def check_contract_values(upstreams: dict[str, pathlib.Path]) -> list[Issue]:
 
 
 def check_seal_columns(upstreams: dict[str, pathlib.Path]) -> list[Issue]:
-    """② 9 列封板快照（写入侧 vs 读取侧 vs 契约）。"""
+    """② 9 列封板快照（写入侧 vs 读取侧 vs 契约）。
+
+    契约正本：``docs/CONTRACTS.md`` §3「``intraday_seal_snapshot`` 的 9 列」。
+
+    判据：
+    - **写入侧**（``INSERT INTO ... intraday_seal_snapshot (...)``）必须严格等于
+      契约 9 列，多一列少一列都是漂移。
+    - **读取侧**（``_SELECT_COLS`` 投影、读方元组）只要是 9 列的**非空子集**即可 ——
+      读方只取需要的列不是契约漂移（CPT 只取 ``at, code, sealed, bid1_lots,
+      limit_price`` 5 列）；出现契约之外的列名才是真漂移。
+    """
     issues: list[Issue] = []
-    want = tuple(c.name for c in intraday_seal.INTRADAY_SEAL_COLUMNS)
+    want9 = tuple(c.name for c in intraday_seal.INTRADAY_SEAL_COLUMNS)
 
     for name in ("cpt", "emotion-core"):
         root = upstreams.get(name)
@@ -309,10 +329,19 @@ def check_seal_columns(upstreams: dict[str, pathlib.Path]) -> list[Issue]:
         if not lists:
             issues.append(Issue("missing", f"{name}/{rel}", "未解析到任何列清单"))
             continue
-        for got in lists:
-            if got != want:
+        for kind, got in lists:
+            if kind == "insert":
+                if got != want9:
+                    issues.append(
+                        Issue("drift", f"{name}/{rel}",
+                              f"写入侧列清单={list(got)} 必须等于契约 9 列={list(want9)}")
+                    )
+                continue
+            extra = [c for c in got if c not in want9]
+            if extra:
                 issues.append(
-                    Issue("drift", f"{name}/{rel}", f"列清单={list(got)} 契约={list(want)}")
+                    Issue("drift", f"{name}/{rel}",
+                          f"读取侧出现契约外列={extra} 契约 9 列={list(want9)}")
                 )
     return issues
 
