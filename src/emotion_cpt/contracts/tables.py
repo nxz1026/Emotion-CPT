@@ -1,7 +1,8 @@
-"""52 张 ``public`` 表的归属 manifest。
+"""47 张 ``public`` 表的归属 manifest。
 
-**真值（2026-10-23 Oracle 实测）**：52 张表 = emotion-core 自有 37 + CPT 自有 14 + 反契约表 1。
-其中 CPT 的 14 张含 **5 张迁移遗留的备份/隔离表**（R67 迁移的丢弃数据，共 21,961 行）。
+**真值（2026-10-24 代码实测）**：47 张表 = emotion-core 自有 37 + CPT 在用 9 + CPT 写 emotion 读 1。
+CPT 的 5 张迁移遗留备份/隔离表已于 2026-10-24 删除（已备份到
+`/home/ubuntu/backups/legacy-tables-20261024-*.{dump,sql,manifest.txt}`）。
 
 这张 manifest 的作用是让「这张表归谁」变成**机器可读的事实**，而不是散落在
 markdown 表格和口头约定里的知识 —— 后者会随时间漂移（上游已实测到 8/10/28/33/36/41 六个口径）。

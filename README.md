@@ -80,6 +80,16 @@ CPT 的 web 层直接依赖 **39 个 application 模块 / 8,380 行**，
 | **快照** | 「K 线 → 结构 → overlays → 结构位 → 结论」的**计算部分** | CPT `cpt/application/a_share_snapshot.py`（1,959 行）的计算部分 |
 | **统一 web 界面层** | 统一入口门面（门户 + 同票并排聚合页 + 两边 API/静态的挂载） | 新增 + 复用 `DSH/portal` |
 | **跨项目契约** | 表归属、9 列声明、6 个契约常量、共享表清单 | 从 markdown 与手抄收敛为代码 |
+| **部署配置** | systemd unit 真相源（31 个）、crontab 真相源（16 条）、cron 解析实现、nginx 门面片段 | `src/emotion_cpt/deploy/` —— 随包分发的唯一真相源 |
+
+### 3.1.1 部署真相源
+
+两处部署描述各有分工：
+
+- **`src/emotion_cpt/deploy/`** —— 随 pip 包分发的部署配置真相源（systemd unit 31 个 + crontab 16 条 + nginx 门面片段）。任何装了 `emotion-cpt` 的仓读到的是同一份。
+- **根目录 `deploy/`** —— 仓内的运行时部署脚本（watchdog shell、nginx 路由片段）。由 `scripts/install_nginx_route.sh` 安装到线上，不随包分发。
+
+> 判定依据：P7-DEPLOY-TRUTH.md §2 目标结构。
 
 ### 3.2 Emotion-CPT 明确**不做**
 
@@ -96,11 +106,15 @@ CPT 的 web 层直接依赖 **39 个 application 模块 / 8,380 行**，
 
 ```
    cpt ─────────┐
-                ├──▶ emotion_cpt.contracts   （契约）
+                 ├──▶ emotion_cpt.contracts   （契约）
 emotion_core ───┤
-                ├──▶ emotion_cpt.db          （数据层）
-                ├──▶ emotion_cpt.structure   （结构计算）
-                └──▶ emotion_cpt.snapshot    （快照计算）
+                 ├──▶ emotion_cpt.db          （数据层）
+                 ├──▶ emotion_cpt.schema      （manifest 与迁移）
+                 ├──▶ emotion_cpt.structure   （结构计算）
+                 ├──▶ emotion_cpt.snapshot    （快照计算）
+                 ├──▶ emotion_cpt.web         （统一入口门面）
+                 ├──▶ emotion_cpt.deploy      （部署配置真相源）
+                 └──▶ emotion_cpt.cli         （运维门禁工具）
 
    emotion_cpt ──✗──▶ cpt / emotion_core      （禁止反向依赖）
 ```
@@ -118,10 +132,10 @@ emotion_core ───┤
 | `emotion_cpt.contracts` | ✅ 可用 | 表归属（47 张）、9 列声明、6 常量 —— **唯一定义处** |
 | `emotion_cpt.db` | ✅ 可用 | `~/.dbconfig` 解析（唯一实现）+ psycopg 连接参数 + 契约指纹探针 |
 | `emotion_cpt.schema` | ✅ 可用 | manifest 加载与指纹 + 迁移目录 |
-| `emotion_cpt.structure` | 🚧 骨架 | 结构计算内核接口（待自 CPT `cpt/domain/` 逐字搬迁） |
+| `emotion_cpt.structure` | ✅ 可用 | 分型 / 笔 / 中枢 / 包含 / 递归 / 趋势 / 背驰 / 结构位 / 买卖点判据（19 模块，自 CPT `cpt/domain/` 搬迁完毕） |
 | `emotion_cpt.snapshot` | 🚧 骨架 | 快照计算流水线接口 |
-| `emotion_cpt.web` | 🚧 骨架 | 入口门面 + 聚合页（只读客户端与冲突检测已可用） |
-| `emotion_cpt.cli` | ✅ 部分可用 | `check_contracts` / `check_manifest` / `check_crontab` / `check_unit_paths` / `probe` |
+| `emotion_cpt.web` | ✅ 部分可用 | 入口门面（`facade.py`）+ 聚合页（`aggregate/{clients,server}.py`）+ web app（`app.py`）|
+| `emotion_cpt.cli` | ✅ 可用 | `check_contracts` / `check_manifest` / `check_crontab` / `check_unit_paths` / `check_doc_drift` / `check_nginx_route` / `check_portal_mirror` / `probe` |
 
 > 本仓当前处于**文档 + 骨架**阶段。实现按 [docs/IMPLEMENTATION.md](docs/IMPLEMENTATION.md)
 > 的阶段推进，每个阶段都有可验证的验收标准。
@@ -137,7 +151,18 @@ emotion_core ───┤
 | [docs/CODE-FRAMEWORK.md](docs/CODE-FRAMEWORK.md) | 代码框架文档：目录、包职责、依赖方向、公共 API |
 | [docs/CONTRACTS.md](docs/CONTRACTS.md) | 契约总览：表归属、列定义、常量、跨仓读取点 |
 | [docs/MIGRATION.md](docs/MIGRATION.md) | 搬迁映射：上游哪个文件搬到本仓哪个模块 |
+| [docs/CROSS-REFERENCES.md](docs/CROSS-REFERENCES.md) | 跨仓引用清单：谁在什么地方读了什么 |
+| [docs/DEPLOYMENT-ISOLATION.md](docs/DEPLOYMENT-ISOLATION.md) | 部署隔离：进程边界与故障域 |
+| [docs/GATE-SELFTEST.md](docs/GATE-SELFTEST.md) | 门禁自检：契约门禁的验证方法 |
+| [docs/OPEN-QUESTIONS.md](docs/OPEN-QUESTIONS.md) | 开放问题：待裁决的设计分歧 |
+| [docs/P0-EXPERIMENTS.md](docs/P0-EXPERIMENTS.md) | P0 实验：缠论内核搬迁前的可行性验证 |
+| [docs/P2-MIGRATION.md](docs/P2-MIGRATION.md) | P2 搬迁：数据层与 schema |
+| [docs/P3-SHARED-POINTS.md](docs/P3-SHARED-POINTS.md) | P3 共享点：跨项目共享表与常量 |
+| [docs/P6-PRICE-CALIBER.md](docs/P6-PRICE-CALIBER.md) | P6 价格口径：5 个价格常量的归一 |
+| [docs/P7-DEPLOY-TRUTH.md](docs/P7-DEPLOY-TRUTH.md) | P7 部署真相源：unit + crontab 归一 |
+| [docs/UI-COMPARISON.md](docs/UI-COMPARISON.md) | UI 对比：门户与两个看板的界面对照 |
 | [docs/adr/](docs/adr/) | 架构决策记录（ADR） |
+| [docs/img/](docs/img/) | 界面截图（4 张：门户 / 聚合页 / emotion-core 看板 / CPT 看板）—— 用于 [UI-COMPARISON.md](docs/UI-COMPARISON.md) |
 
 ---
 
