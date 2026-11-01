@@ -59,6 +59,8 @@ CPT ──写──────────▶ intraday_seal_snapshot ──▶ 
 
 ⚠️ 「没行」= **判不了**，不是「没封板」。
 
+写入侧必须写全这 9 列；读方**允许投影**（只 SELECT 需要的子集，如 CPT `_SELECT_COLS` 只取 `at, code, sealed, bid1_lots, limit_price`），投影不是契约漂移。门禁 `check_contracts` 即按此判：写入侧严格等 9 列，读取侧必须是 9 列的子集。
+
 ## 4. 6 个契约常量（唯一定义处）
 
 | 常量 | 值 | 迁移前的真源 |

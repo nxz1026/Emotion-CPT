@@ -45,8 +45,7 @@ Emotion-CPT/
 │   │   ├── tables.py              #   47 张表的归属 / 写入方 / 读取方 / 新鲜度
 │   │   ├── intraday_seal.py       #   9 列声明（带单位与语义）
 │   │   ├── pricing.py             #   6 个契约常量
-│   │   ├── shared_tables.py       #   7 张共享表清单 + 新鲜度判据
-│   │   └── errors.py
+│   │   └── shared_tables.py       #   7 张共享表清单 + 新鲜度判据
 │   ├── db/                        # 数据访问层
 │   │   ├── __init__.py
 │   │   ├── config.py              #   ~/.dbconfig 解析（$KEY=value 口径）
@@ -76,10 +75,6 @@ Emotion-CPT/
 │   │   ├── intraday_rules.py      #   盘中判据
 │   │   ├── market_time.py         #   交易时段
 │   │   └── price.py               #   ★ 价格口径（整数分算法，P6）
-│   ├── snapshot/                  # ★ 快照计算（K 线 → 结构 → overlays → 结构位）
-│   │   ├── __init__.py
-│   │   ├── pipeline.py            #   compute_snapshot()
-│   │   └── points.py              #   ★ 结构位算式（P3 统一：取整 2 位）
 │   ├── web/                       # 统一 web 入口
 │   │   ├── __init__.py
 │   │   ├── app.py                 #   ★ 入口门面（:8092，零三方依赖）
